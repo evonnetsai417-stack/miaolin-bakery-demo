@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗林烘焙營運系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #3D2B1F;
+            --primary-light: #5A3E2B;
+            --primary-dark: #231815;
+            --accent: #C49A2B;
+            --accent-deep: #AB9013;
+            --accent-light: #F0D98B;
+            --cta: #EE7642;
+            --warm: #F5EFE6;
+            --warm-dark: #E8DDD0;
+            --canvas: #FAF7F2;
+            --surface: #FFFFFF;
+            --neutral-500: #8D9094;
+            --neutral-300: #D9D9D9;
+            --success: #16A34A;
+            --danger: #DC2626;
+            --warning: #C49A2B;
+        }
+
+        html { background-color: #D9D9D9; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #D9D9D9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 430px;
+            min-width: 320px;
+            background-color: var(--warm);
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 80px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+        }
+
+        .page { display: none; }
+        .page.active {
+            display: block;
+            animation: pageIn 0.22s ease forwards;
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tab bar – 5 items */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100%; max-width: 430px;
+            background-color: var(--primary);
+            display: flex;
+            padding: 6px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .tab-item {
+            flex: 1;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 2px;
+            padding: 6px 4px;
+            color: var(--neutral-500);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .tab-item.active { color: var(--accent); }
+        .tab-item svg { width: 20px; height: 20px; }
+        .tab-item span { font-size: 10px; }
+
+        /* Cards */
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--warm-dark);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        /* KPI 數字卡 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .kpi-card {
+            background-color: var(--surface);
+            border: 1px solid var(--warm-dark);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+        .kpi-label { font-size: 11px; color: var(--neutral-500); margin-bottom: 6px; }
+        .kpi-value { font-size: 22px; font-weight: 700; color: var(--primary); line-height: 1; }
+        .kpi-sub   { font-size: 11px; margin-top: 4px; }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary); color: white;
+            padding: 12px 24px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 16px;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background-color: var(--primary-light); }
+        .btn-primary:active { transform: scale(0.97); }
+
+        .btn-cta {
+            background-color: var(--cta); color: white;
+            padding: 12px 24px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 16px;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-cta:hover { opacity: 0.9; }
+        .btn-cta:active { transform: scale(0.97); }
+
+        .btn-accent {
+            background-color: var(--accent); color: white;
+            padding: 8px 16px; border-radius: 6px; border: none;
+            cursor: pointer; font-size: 14px;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-accent:active { transform: scale(0.97); }
+
+        /* Badges */
+        .badge-danger  { background-color:#FEE2E2;color:#991B1B;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600; }
+        .badge-warning { background-color:#FEF3C7;color:#92400E;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600; }
+        .badge-success { background-color:#D1FAE5;color:#065F46;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600; }
+
+        /* Progress bar */
+        .progress-bar  { width:100%;height:8px;background-color:var(--warm-dark);border-radius:4px;overflow:hidden; }
+        .progress-fill { height:100%;background-color:var(--accent);transition:width 0.4s ease; }
+
+        /* Keywords */
+        /* 品類大按鈕 */
+        .cat-btn {
+            background: var(--surface);
+            border: 2px solid var(--warm-dark);
+            border-radius: 10px;
+            padding: 10px 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            transition: all 0.2s;
+            text-align: center;
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.4;
+        }
+        .cat-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        .cat-btn:active { transform: scale(0.95); }
+
+        /* 細條件 tag */
+        .filter-tag {
+            display: inline-block;
+            padding: 5px 12px; margin: 3px;
+            border: 1.5px solid var(--warm-dark);
+            border-radius: 16px;
+            font-size: 12px;
+            color: var(--neutral-500);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .filter-tag.active {
+            border-color: var(--accent);
+            color: var(--primary);
+            background: rgba(196,154,43,0.12);
+            font-weight: 600;
+        }
+        .filter-tag:active { transform: scale(0.95); }
+
+        /* 原料列：苗林品項 */
+        .miaolin-ing {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--warm-dark);
+            gap: 8px;
+        }
+        .ing-fav-btn {
+            background: none;
+            border: 1.5px solid var(--accent);
+            border-radius: 12px;
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--accent);
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .ing-fav-btn.saved { background: var(--accent); color: white; }
+
+        /* 最愛清單 */
+        .fav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--warm-dark);
+            font-size: 13px;
+        }
+
+        /* Recipe card */
+        .recipe-card {
+            background-color: var(--surface);
+            border: 1px solid var(--warm-dark);
+            border-radius: 12px;
+            padding: 16px; margin-bottom: 12px;
+            animation: pageIn 0.3s ease forwards;
+        }
+
+        /* Analysis sub-tabs */
+        .sub-tabs {
+            display: flex;
+            background-color: var(--warm-dark);
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 14px;
+            gap: 2px;
+        }
+        .sub-tab {
+            flex: 1; text-align: center;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 12px; font-weight: 600;
+            color: var(--neutral-500);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sub-tab.active {
+            background-color: var(--surface);
+            color: var(--primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+        .sub-content { display: none; }
+        .sub-content.active { display: block; animation: pageIn 0.2s ease; }
+
+        /* Chart wrapper – CRITICAL: must have fixed height */
+        .chart-wrap {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+        .chart-wrap-tall {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        /* Heatmap cells */
+        .heatmap-cell {
+            height: 36px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 600;
+            color: white;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed; bottom: 88px; right: 20px;
+            width: 56px; height: 56px;
+            background-color: var(--cta);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 999;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        /* Bottom sheet modal */
+        .modal {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: flex-end; justify-content: center;
+        }
+        .modal.active { display: flex; animation: modalBgIn 0.2s ease; }
+        @keyframes modalBgIn {
+            from { background-color: rgba(0,0,0,0); }
+            to   { background-color: rgba(0,0,0,0.5); }
+        }
+        .modal-content {
+            background-color: var(--surface);
+            border-radius: 20px 20px 0 0;
+            padding: 24px; width: 100%; max-width: 430px;
+            max-height: 80vh; overflow-y: auto;
+            animation: sheetUp 0.28s cubic-bezier(0.34,1.4,0.64,1);
+        }
+        @keyframes sheetUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+
+        /* Toast */
+        #toast-container {
+            position: fixed; top: 16px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+            width: calc(100% - 32px); max-width: 398px;
+        }
+        .toast {
+            background-color: var(--primary); color: white;
+            padding: 11px 14px; border-radius: 10px;
+            font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            display: flex; align-items: center; gap: 8px;
+            animation: toastIn 0.28s cubic-bezier(0.34,1.4,0.64,1) forwards;
+        }
+        .toast.success { background-color: #065F46; border-left: 4px solid #16A34A; }
+        .toast.warning { background-color: #92400E; border-left: 4px solid #C49A2B; }
+        .toast.error   { background-color: #991B1B; border-left: 4px solid #DC2626; }
+        .toast.hide    { animation: toastOut 0.22s ease forwards; }
+        @keyframes toastIn  { from{opacity:0;transform:translateY(-12px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes toastOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(-10px)} }
+
+        /* Spinner */
+        .loading-spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%;
+            animation: spin 0.7s linear infinite; flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Skeleton */
+        .recipe-skeleton { background-color:var(--surface);border:1px solid var(--warm-dark);border-radius:12px;padding:16px;margin-bottom:12px; }
+        .skeleton-line {
+            height: 13px;
+            background: linear-gradient(90deg, var(--warm-dark) 25%, var(--warm) 50%, var(--warm-dark) 75%);
+            background-size: 200% 100%;
+            border-radius: 5px; margin-bottom: 9px;
+            animation: shimmer 1.2s infinite;
+        }
+        @keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+
+        .upload-zone.drag-over { background-color: var(--accent-light); border-color: var(--accent-deep); }
+
+        @media (min-width: 431px) {
+            .fab { right: calc(50% - 195px); }
+        }
+    </style>
+</head>
+<body>
+<div id="app-container">
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════
+     首頁
+════════════════════════════════════════════ -->
+<div id="home" class="page active" style="padding:16px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+            <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin:0;">苗林烘焙</h1>
+            <div style="font-size:12px;color:var(--neutral-500);margin-top:2px;" id="todayDate"></div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--neutral-500);">今日營收</div>
+            <div style="font-size:24px;font-weight:700;color:var(--accent);line-height:1.2;">NT$ 70,000</div>
+            <div style="font-size:11px;color:var(--success);">↑ 7.7% vs 昨日</div>
+        </div>
+    </div>
+
+    <!-- 核心 KPI -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">今日出爐件數</div>
+            <div class="kpi-value">312</div>
+            <div class="kpi-sub" style="color:var(--success);">↑ 5% vs 昨日</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">今日銷售件數</div>
+            <div class="kpi-value">289</div>
+            <div class="kpi-sub" style="color:var(--neutral-500);">售出率 92.6%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">本週累計營收</div>
+            <div class="kpi-value" style="font-size:17px;">NT$ 385K</div>
+            <div class="kpi-sub" style="color:var(--success);">↑ 4% vs 上週</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">今日損耗件數</div>
+            <div class="kpi-value" style="color:var(--danger);">23</div>
+            <div class="kpi-sub" style="color:var(--danger);">損耗率 7.4%</div>
+        </div>
+    </div>
+
+    <!-- 今日暢銷 TOP3 -->
+    <div class="card" style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;margin-bottom:12px;">
+        <h2 style="font-size:15px;font-weight:600;margin-bottom:12px;opacity:0.85;">今日暢銷 TOP 3</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;">
+                <div style="font-size:22px;margin-bottom:4px;">🥖</div>
+                <div style="font-size:12px;font-weight:600;margin-bottom:4px;">法國麵包</div>
+                <div style="font-size:18px;font-weight:700;color:var(--accent-light);">45</div>
+                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 12%</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;">
+                <div style="font-size:22px;margin-bottom:4px;">🥐</div>
+                <div style="font-size:12px;font-weight:600;margin-bottom:4px;">可頌</div>
+                <div style="font-size:18px;font-weight:700;color:var(--accent-light);">38</div>
+                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 8%</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;">
+                <div style="font-size:22px;margin-bottom:4px;">🍞</div>
+                <div style="font-size:12px;font-weight:600;margin-bottom:4px;">吐司</div>
+                <div style="font-size:18px;font-weight:700;color:var(--accent-light);">32</div>
+                <div style="font-size:10px;color:#FFE4B5;margin-top:2px;">↓ 3%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 緊急警示（只顯示最高優先級） -->
+    <div class="card" style="border-color:#FEE2E2;background:#FFF5F5;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div style="font-weight:700;color:#991B1B;font-size:14px;margin-bottom:4px;">🔴 緊急缺貨 — 3天內</div>
+                <div style="font-size:13px;color:#DC2626;">日清百合花法國粉・菲仕蘭發酵奶油</div>
+            </div>
+            <button onclick="switchPage('restock')" style="background:var(--danger);color:white;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;white-space:nowrap;">立即補貨</button>
+        </div>
+    </div>
+
+    <!-- 快捷入口 -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px;">
+        <button onclick="switchPage('analytics')" style="background:var(--surface);border:1px solid var(--warm-dark);border-radius:12px;padding:14px;cursor:pointer;text-align:left;font-family:'Noto Sans TC',sans-serif;">
+            <div style="font-size:20px;margin-bottom:6px;">📊</div>
+            <div style="font-size:13px;font-weight:600;color:var(--primary);">深度分析</div>
+            <div style="font-size:11px;color:var(--neutral-500);margin-top:2px;">銷售・損耗・成本</div>
+        </button>
+        <button onclick="switchPage('recipe')" style="background:var(--surface);border:1px solid var(--warm-dark);border-radius:12px;padding:14px;cursor:pointer;text-align:left;font-family:'Noto Sans TC',sans-serif;">
+            <div style="font-size:20px;margin-bottom:6px;">💡</div>
+            <div style="font-size:13px;font-weight:600;color:var(--primary);">食譜靈感</div>
+            <div style="font-size:11px;color:var(--neutral-500);margin-top:2px;">AI 配方建議</div>
+        </button>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     深度分析
+════════════════════════════════════════════ -->
+<div id="analytics" class="page" style="padding:16px;">
+    <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin-bottom:14px;">📊 深度分析</h1>
+
+    <div class="sub-tabs">
+        <div class="sub-tab active" onclick="switchSubTab('analytics','trend')">銷售趨勢</div>
+        <div class="sub-tab" onclick="switchSubTab('analytics','product')">品項表現</div>
+        <div class="sub-tab" onclick="switchSubTab('analytics','waste')">損耗追蹤</div>
+        <div class="sub-tab" onclick="switchSubTab('analytics','cost')">成本結構</div>
+    </div>
+
+    <!-- 銷售趨勢 -->
+    <div id="analytics-trend" class="sub-content active">
+
+        <!-- 本月 vs 上月 KPI -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">本月營收</div>
+                <div class="kpi-value" style="font-size:17px;">NT$ 1.12M</div>
+                <div class="kpi-sub" style="color:var(--success);">↑ 9.4% vs 上月</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">日均銷售件數</div>
+                <div class="kpi-value">283</div>
+                <div class="kpi-sub" style="color:var(--success);">↑ 6.2% vs 上月</div>
+            </div>
+        </div>
+
+        <!-- 近7日營收折線 -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin:0;">近7日每日營收</h2>
+                <span style="font-size:12px;color:var(--neutral-500);">平均 NT$ 65K</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 星期別熱銷 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">星期別銷售熱力</h2>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">一</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">二</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">三</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">四</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">五</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">六</div>
+                <div style="text-align:center;font-size:11px;color:var(--neutral-500);padding-bottom:4px;">日</div>
+            </div>
+            <div id="weekHeatmap" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--neutral-500);">
+                <div style="width:12px;height:12px;border-radius:3px;background:#E8DDD0;"></div>低
+                <div style="width:12px;height:12px;border-radius:3px;background:#C49A2B;"></div>中
+                <div style="width:12px;height:12px;border-radius:3px;background:#3D2B1F;"></div>高
+            </div>
+        </div>
+
+        <!-- 近30日趨勢 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">近30日累積趨勢</h2>
+            <div class="chart-wrap-tall">
+                <canvas id="monthTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 品項表現 -->
+    <div id="analytics-product" class="sub-content">
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">SKU 總數</div>
+                <div class="kpi-value">18</div>
+                <div class="kpi-sub" style="color:var(--neutral-500);">本月在售</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">平均毛利率</div>
+                <div class="kpi-value" style="color:var(--success);">54.3%</div>
+                <div class="kpi-sub" style="color:var(--success);">↑ 1.2pp vs 上月</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">銷售量 TOP 8</h2>
+            <div class="chart-wrap-tall">
+                <canvas id="salesRankChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card" style="border-color:#FEF3C7;background:#FFFBEB;">
+            <h2 style="color:#92400E;font-size:15px;font-weight:600;margin-bottom:8px;">⚠️ 滯銷預警</h2>
+            <div style="font-size:13px;color:var(--neutral-500);line-height:1.8;">
+                <div>• <strong style="color:var(--primary);">起司蛋糕</strong> — 本週售出率 61%，建議減產 30%</div>
+                <div>• <strong style="color:var(--primary);">藍莓馬芬</strong> — 連續3天日銷 &lt; 5個，考慮下架</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 損耗追蹤 -->
+    <div id="analytics-waste" class="sub-content">
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">本週損耗率</div>
+                <div class="kpi-value" style="color:var(--danger);">8.2%</div>
+                <div class="kpi-sub" style="color:var(--danger);">目標 &lt; 5%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">本週損耗成本</div>
+                <div class="kpi-value" style="font-size:17px;color:var(--danger);">NT$ 4,180</div>
+                <div class="kpi-sub" style="color:var(--danger);">↑ 1.3% vs 上週</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">各品項損耗率</h2>
+            <div class="chart-wrap-tall">
+                <canvas id="wasteChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">出爐量 vs 銷售量（近7日）</h2>
+            <div class="chart-wrap-tall">
+                <canvas id="prodVsSalesChart"></canvas>
+            </div>
+            <div style="font-size:12px;color:var(--neutral-500);margin-top:8px;">灰色與金色的差距即為每日損耗</div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:8px;">損耗改善建議</h2>
+            <div style="font-size:13px;color:var(--neutral-500);line-height:1.9;">
+                <div>• 週五出爐蛋糕捲建議<strong style="color:var(--primary);">減少 20%</strong>（週末已接近售完）</div>
+                <div>• 起司蛋糕週一損耗率高達 22%，建議<strong style="color:var(--primary);">週日不出爐</strong></div>
+                <div>• 法國麵包損耗低，可考慮<strong style="color:var(--primary);">每日增產 5–10 個</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成本結構 -->
+    <div id="analytics-cost" class="sub-content">
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">本月原料成本</div>
+                <div class="kpi-value" style="font-size:17px;">NT$ 502K</div>
+                <div class="kpi-sub" style="color:var(--danger);">↑ 3.1% 麵粉漲價</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">原料佔營收比</div>
+                <div class="kpi-value">44.8%</div>
+                <div class="kpi-sub" style="color:var(--neutral-500);">健康區間 40–50%</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">原料成本佔比</h2>
+            <div style="position:relative;height:200px;width:100%;">
+                <canvas id="costPieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">近6個月成本趨勢</h2>
+            <div class="chart-wrap-tall">
+                <canvas id="costTrendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card" style="border-color:#D1FAE5;background:#F0FDF4;">
+            <h2 style="color:#065F46;font-size:15px;font-weight:600;margin-bottom:8px;">💰 成本優化機會</h2>
+            <div style="font-size:13px;color:var(--neutral-500);line-height:1.9;">
+                <div>• <strong style="color:var(--primary);">日清山茶花強力粉</strong> 佔原料成本 28%，與苗林行議價空間約 <strong style="color:var(--success);">↓5–8%</strong></div>
+                <div>• <strong style="color:var(--primary);">菲仕蘭發酵奶油</strong> 替換法國進口 → 紐西蘭版，每月省 <strong style="color:var(--success);">NT$ 8,000</strong></div>
+                <div>• 每週集中下單一次（目前3次），可降運費 <strong style="color:var(--success);">NT$ 1,200/月</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     食譜靈感
+════════════════════════════════════════════ -->
+<div id="recipe" class="page" style="padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin:0;">💡 食譜靈感</h1>
+        <button onclick="showFavorites()" id="favBtn" style="background:var(--surface);border:1.5px solid var(--accent);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;gap:4px;">
+            ★ 我的最愛 <span id="favCount" style="background:var(--accent);color:white;border-radius:10px;padding:1px 6px;font-size:11px;">0</span>
+        </button>
+    </div>
+
+    <!-- 當週熱銷 -->
+    <div class="card" style="padding:12px 16px;">
+        <div style="font-size:12px;color:var(--neutral-500);margin-bottom:6px;">當週熱銷 — 點擊快速套用品類</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge-warning" style="cursor:pointer;" onclick="quickCategory('硬式歐包')">🥖 法國麵包</span>
+            <span class="badge-warning" style="cursor:pointer;" onclick="quickCategory('丹麥酥皮')">🥐 可頌</span>
+            <span class="badge-warning" style="cursor:pointer;" onclick="quickCategory('軟式麵包')">🍞 吐司</span>
+        </div>
+    </div>
+
+    <!-- 品類選擇 -->
+    <div class="card">
+        <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">選品類 <span style="color:var(--neutral-500);font-weight:400;font-size:12px;">（不選 = 全部）</span></h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <button class="cat-btn" data-cat="軟式麵包"  onclick="toggleCat(this)">🍞<br>軟式麵包</button>
+            <button class="cat-btn" data-cat="硬式歐包"  onclick="toggleCat(this)">🥖<br>硬式歐包</button>
+            <button class="cat-btn" data-cat="丹麥酥皮"  onclick="toggleCat(this)">🥐<br>丹麥酥皮</button>
+            <button class="cat-btn" data-cat="蛋糕"      onclick="toggleCat(this)">🎂<br>蛋糕</button>
+            <button class="cat-btn" data-cat="塔派"      onclick="toggleCat(this)">🥧<br>塔派</button>
+            <button class="cat-btn" data-cat="小點心"    onclick="toggleCat(this)">🍪<br>小點心</button>
+        </div>
+    </div>
+
+    <!-- 細條件（可收合）-->
+    <div class="card" style="padding:0;">
+        <div onclick="toggleFilterPanel()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin:0;">更多條件 <span id="activeFilterCount" style="display:none;background:var(--accent);color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span></h2>
+            <span id="filterArrow" style="color:var(--neutral-500);font-size:14px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="filterPanel" style="display:none;padding:0 16px 14px;">
+            <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:4px;">風格</div>
+                <div>
+                    <span class="filter-tag" data-group="style" data-val="台式" onclick="toggleFilter(this)">台式</span>
+                    <span class="filter-tag" data-group="style" data-val="日系" onclick="toggleFilter(this)">日系</span>
+                    <span class="filter-tag" data-group="style" data-val="法式" onclick="toggleFilter(this)">法式</span>
+                    <span class="filter-tag" data-group="style" data-val="韓系" onclick="toggleFilter(this)">韓系</span>
+                    <span class="filter-tag" data-group="style" data-val="美式" onclick="toggleFilter(this)">美式</span>
+                </div>
+            </div>
+            <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:4px;">口感</div>
+                <div>
+                    <span class="filter-tag" data-group="texture" data-val="軟綿" onclick="toggleFilter(this)">軟綿</span>
+                    <span class="filter-tag" data-group="texture" data-val="Q彈" onclick="toggleFilter(this)">Q彈</span>
+                    <span class="filter-tag" data-group="texture" data-val="酥脆" onclick="toggleFilter(this)">酥脆</span>
+                    <span class="filter-tag" data-group="texture" data-val="紮實" onclick="toggleFilter(this)">紮實</span>
+                    <span class="filter-tag" data-group="texture" data-val="入口即化" onclick="toggleFilter(this)">入口即化</span>
+                </div>
+            </div>
+            <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:4px;">風味</div>
+                <div>
+                    <span class="filter-tag" data-group="flavor" data-val="甜" onclick="toggleFilter(this)">甜</span>
+                    <span class="filter-tag" data-group="flavor" data-val="鹹" onclick="toggleFilter(this)">鹹</span>
+                    <span class="filter-tag" data-group="flavor" data-val="苦甜" onclick="toggleFilter(this)">苦甜</span>
+                    <span class="filter-tag" data-group="flavor" data-val="酸甜" onclick="toggleFilter(this)">酸甜</span>
+                    <span class="filter-tag" data-group="flavor" data-val="奶香" onclick="toggleFilter(this)">奶香</span>
+                    <span class="filter-tag" data-group="flavor" data-val="果香" onclick="toggleFilter(this)">果香</span>
+                    <span class="filter-tag" data-group="flavor" data-val="堅果" onclick="toggleFilter(this)">堅果</span>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:4px;">指定使用原料</div>
+                <input type="text" id="requiredIng" placeholder="例如：菲仕蘭發酵奶油、森半抹茶粉..."
+                    style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:13px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:14px;">
+        <button onclick="feelLucky()" style="background:var(--surface);border:2px solid var(--primary);border-radius:8px;padding:14px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s;">
+            🎲 幫我挑
+        </button>
+        <button class="btn-cta" id="generateBtn" onclick="generateRecipes()"
+            style="font-size:15px;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+            🤖 產生食譜
+        </button>
+    </div>
+
+    <div id="recipeResults"></div>
+</div>
+
+<!-- 最愛清單 Modal -->
+<div id="favModal" class="modal" onclick="handleFavBackdrop(event)">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="color:var(--primary);font-size:18px;font-weight:700;margin:0;">★ 我的最愛原料</h2>
+            <button onclick="closeFavorites()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--neutral-500);line-height:1;">×</button>
+        </div>
+        <div id="favList" style="margin-bottom:16px;"></div>
+        <button class="btn-cta" style="width:100%;" onclick="orderAllFavorites()">全部加入採購單</button>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     補貨分析
+════════════════════════════════════════════ -->
+<div id="restock" class="page" style="padding:16px;">
+    <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin-bottom:14px;">📦 補貨分析</h1>
+
+    <div class="card">
+        <label style="color:var(--primary);font-weight:600;display:block;margin-bottom:8px;">選擇品項</label>
+        <select id="productSelect" onchange="updateAnalysis()"
+            style="width:100%;padding:12px;border:2px solid var(--warm-dark);border-radius:8px;font-size:14px;font-family:'Noto Sans TC',sans-serif;background-color:white;">
+            <option value="french">法國麵包</option>
+            <option value="croissant">可頌</option>
+            <option value="toast">吐司</option>
+            <option value="cake">蛋糕捲</option>
+            <option value="cheese">起司蛋糕</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">近7日銷售趨勢</h2>
+        <div class="chart-wrap">
+            <canvas id="salesTrendChart"></canvas>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;">
+            <div style="text-align:center;padding:10px;background-color:var(--canvas);border-radius:8px;">
+                <div style="font-size:11px;color:var(--neutral-500);margin-bottom:4px;">平均日銷量</div>
+                <div id="avgDaily" style="font-size:20px;font-weight:700;color:var(--primary);">45</div>
+            </div>
+            <div style="text-align:center;padding:10px;background-color:var(--canvas);border-radius:8px;">
+                <div style="font-size:11px;color:var(--neutral-500);margin-bottom:4px;">預估未來7日</div>
+                <div id="forecast7" style="font-size:20px;font-weight:700;color:var(--accent);">315</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">原料需求對照</h2>
+        <div id="ingredientList"></div>
+    </div>
+
+    <div class="card">
+        <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">補貨建議</h2>
+        <div id="restockList"></div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     數據記錄
+════════════════════════════════════════════ -->
+<div id="import" class="page" style="padding:16px;">
+    <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin-bottom:14px;">📋 數據記錄</h1>
+
+    <div class="sub-tabs">
+        <div class="sub-tab active" onclick="switchSubTab('import','bake')">出爐記錄</div>
+        <div class="sub-tab" onclick="switchSubTab('import','sales')">銷售匯入</div>
+    </div>
+
+    <!-- ── 出爐記錄 ── -->
+    <div id="import-bake" class="sub-content active">
+
+        <!-- 今日出爐摘要 -->
+        <div class="kpi-grid" style="margin-bottom:12px;">
+            <div class="kpi-card">
+                <div class="kpi-label">今日出爐總數</div>
+                <div class="kpi-value" id="todayBakeTotal">—</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">紀錄筆數</div>
+                <div class="kpi-value" id="todayBakeCount">0</div>
+            </div>
+        </div>
+
+        <!-- 拍照辨識入口 -->
+        <div class="card" style="text-align:center;padding:24px 16px;">
+            <div style="font-size:48px;margin-bottom:10px;">📷</div>
+            <div style="font-weight:700;color:var(--primary);font-size:16px;margin-bottom:6px;">拍照辨識出爐品項</div>
+            <div style="color:var(--neutral-500);font-size:13px;margin-bottom:16px;">拍一張冷卻架照片，AI 自動辨識品項與數量</div>
+            <input type="file" id="bakePhoto" accept="image/*" capture="environment" style="display:none;" onchange="handleBakePhoto(event)">
+            <button class="btn-cta" onclick="document.getElementById('bakePhoto').click()"
+                style="width:100%;font-size:15px;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+                📸 開啟相機掃描
+            </button>
+            <div style="color:var(--neutral-500);font-size:11px;margin-top:8px;">或從相簿選取照片</div>
+        </div>
+
+        <!-- AI 辨識結果區（初始隱藏）-->
+        <div id="scanResult" style="display:none;">
+            <div class="card" style="border-color:var(--accent);background:#FFFBEB;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div>
+                        <div style="font-weight:700;color:var(--primary);font-size:14px;">🤖 AI 辨識結果</div>
+                        <div style="font-size:11px;color:var(--neutral-500);margin-top:2px;">請確認數量正確，可直接修改</div>
+                    </div>
+                    <span id="scanAccuracy" class="badge-success">信心度 87%</span>
+                </div>
+                <div id="scanItems"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
+                    <button onclick="dismissScan()" style="background:var(--surface);border:1.5px solid var(--warm-dark);border-radius:8px;padding:11px;font-size:13px;color:var(--neutral-500);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+                        重新掃描
+                    </button>
+                    <button class="btn-cta" onclick="confirmBakeRecord()" style="padding:11px;font-size:13px;">
+                        ✓ 確認出爐量
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手動快速輸入 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">✏️ 手動輸入</h2>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
+                <div>
+                    <label style="font-size:12px;color:var(--neutral-500);display:block;margin-bottom:4px;">品項</label>
+                    <input type="text" id="bakeItem" placeholder="例：法國麵包"
+                        style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:13px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:12px;color:var(--neutral-500);display:block;margin-bottom:4px;">數量</label>
+                    <input type="number" id="bakeQty" placeholder="30" min="1"
+                        style="width:70px;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:13px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                </div>
+                <button class="btn-accent" onclick="addBakeManual()" style="padding:10px 14px;height:40px;margin-bottom:0;">新增</button>
+            </div>
+        </div>
+
+        <!-- 今日出爐紀錄 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">📋 今日出爐紀錄</h2>
+            <div id="bakeLog">
+                <div style="text-align:center;padding:20px;color:var(--neutral-500);font-size:13px;">
+                    還沒有記錄，拍照或手動輸入開始記錄
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── 銷售匯入 ── -->
+    <div id="import-sales" class="sub-content">
+        <div id="uploadZone" class="card upload-zone"
+            style="border:2px dashed var(--accent);text-align:center;padding:32px 16px;cursor:pointer;transition:all 0.2s;">
+            <div style="font-size:40px;margin-bottom:10px;">📂</div>
+            <div style="color:var(--primary);font-weight:600;margin-bottom:6px;">拖曳 POS 匯出檔案到這裡</div>
+            <div style="color:var(--neutral-500);font-size:13px;margin-bottom:14px;">或點擊選擇</div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileSelect(event)">
+            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">選擇 Excel / CSV</button>
+            <div style="color:var(--neutral-500);font-size:11px;margin-top:8px;">支援 .xlsx .xls .csv</div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">✏️ 手動輸入銷售</h2>
+            <div style="display:grid;gap:10px;">
+                <div>
+                    <label style="color:var(--primary);font-size:12px;font-weight:600;display:block;margin-bottom:4px;">品項</label>
+                    <input type="text" id="manualItem" placeholder="例如: 法國麵包"
+                        style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                    <div>
+                        <label style="color:var(--primary);font-size:12px;font-weight:600;display:block;margin-bottom:4px;">數量</label>
+                        <input type="number" id="manualQty" placeholder="45"
+                            style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="color:var(--primary);font-size:12px;font-weight:600;display:block;margin-bottom:4px;">售價</label>
+                        <input type="number" id="manualPrice" placeholder="65"
+                            style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                    </div>
+                </div>
+                <button class="btn-primary" style="width:100%;" onclick="addManualItem()">新增品項</button>
+            </div>
+            <div id="manualItemList" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">📜 匯入歷史</h2>
+            <div id="importHistory" style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+                    <span style="color:var(--primary);font-weight:600;">2024-05-14 10:30</span>
+                    <span class="badge-success">186 筆</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+                    <span style="color:var(--primary);font-weight:600;">2024-05-13 14:20</span>
+                    <span class="badge-success">203 筆</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;">
+                    <span style="color:var(--primary);font-weight:600;">2024-05-12 09:15</span>
+                    <span class="badge-success">178 筆</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- FAB -->
+<div class="fab" id="cartFab" onclick="showCart()" style="display:none;">
+    🛒
+    <span id="cartCount" style="position:absolute;top:-5px;right:-5px;background-color:var(--danger);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">0</span>
+</div>
+
+<!-- Cart modal -->
+<div id="cartModal" class="modal" onclick="handleModalBackdrop(event)">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <h2 style="color:var(--primary);font-size:18px;font-weight:700;margin:0;">📋 採購清單</h2>
+            <button onclick="closeCart()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--neutral-500);line-height:1;">×</button>
+        </div>
+        <div id="cartItems" style="margin-bottom:16px;"></div>
+        <div style="border-top:2px solid var(--warm-dark);padding-top:14px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;color:var(--primary);">
+                <span>總計</span><span id="cartTotal">NT$ 0</span>
+            </div>
+        </div>
+        <button class="btn-cta" style="width:100%;" onclick="submitOrder()">送出採購單</button>
+    </div>
+</div>
+
+<!-- 欄位對應確認 Modal -->
+<div id="mappingModal" class="modal" onclick="handleMappingBackdrop(event)">
+    <div class="modal-content" style="max-width:430px;max-height:88vh;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+                <h2 style="color:var(--primary);font-size:17px;font-weight:700;margin:0;">確認欄位對應</h2>
+                <div style="font-size:11px;color:var(--neutral-500);margin-top:3px;" id="mappingFileName"></div>
+            </div>
+            <button onclick="closeMappingModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--neutral-500);line-height:1;">×</button>
+        </div>
+
+        <!-- 資料預覽 -->
+        <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:6px;">資料預覽（前 3 筆）</div>
+            <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--warm-dark);">
+                <table id="previewTable" style="width:100%;border-collapse:collapse;font-size:11px;"></table>
+            </div>
+        </div>
+
+        <!-- 欄位對應設定 -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:var(--neutral-500);margin-bottom:10px;">欄位對應設定</div>
+            <div style="display:grid;gap:10px;" id="mappingFields">
+                <!-- 動態產生 -->
+            </div>
+        </div>
+
+        <!-- 說明 -->
+        <div style="background:var(--canvas);border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--neutral-500);line-height:1.6;">
+            ★ 日期、品項名稱、銷售數量為必填對應<br>
+            對應關係會記住，下次同格式自動套用
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+            <button onclick="closeMappingModal()" style="background:var(--surface);border:1.5px solid var(--warm-dark);border-radius:8px;padding:12px;font-size:13px;color:var(--neutral-500);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+                取消
+            </button>
+            <button class="btn-cta" onclick="confirmImport()" style="padding:12px;font-size:14px;">
+                ✓ 確認匯入
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tab bar – 5 tabs -->
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchPage('home')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+        <span>首頁</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('analytics')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        <span>分析</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('recipe')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        <span>食譜</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('restock')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        <span>補貨</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('import')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+        <span>記錄</span>
+    </div>
+</div>
+
+
+<script>
+// ─── 全域狀態 ───────────────────────────────────────────
+let cart = [];
+const charts = {};  // 統一管理所有圖表實例
+let manualItems = [];
+
+// ─── Toast ──────────────────────────────────────────────
+function showToast(msg, type = 'default', duration = 2500) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    const icon = { success:'✅', warning:'⚠️', error:'❌', default:'ℹ️' }[type] || 'ℹ️';
+    t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 280); }, duration);
+}
+
+// ─── 圖表統一管理 ────────────────────────────────────────
+function destroyChart(id) {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ─── 頁面切換 ─────────────────────────────────────────────
+const PAGE_TAB_MAP = { home:0, analytics:1, recipe:2, restock:3, import:4 };
+
+function switchPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    const idx = PAGE_TAB_MAP[pageId];
+    if (idx !== undefined) document.querySelectorAll('.tab-item')[idx].classList.add('active');
+
+    if (pageId === 'analytics') initAnalyticsPage();
+    if (pageId === 'restock')   { destroyChart('salesTrendChart'); initSalesChart(); renderAnalysisData(); }
+}
+
+// ─── 分析頁 sub-tab ───────────────────────────────────────
+function switchSubTab(page, tab) {
+    document.querySelectorAll(`#${page} .sub-tab`).forEach(el => el.classList.remove('active'));
+    document.querySelectorAll(`#${page} .sub-content`).forEach(el => el.classList.remove('active'));
+
+    const tabs = document.querySelectorAll(`#${page} .sub-tab`);
+    const tabOrder = { trend:0, product:1, waste:2, cost:3 };
+    const idx = tabOrder[tab];
+    if (idx !== undefined) tabs[idx].classList.add('active');
+    document.getElementById(`${page}-${tab}`).classList.add('active');
+
+    initAnalyticsChartForTab(tab);
+}
+
+// ─── 分析頁：依子頁初始化圖表 ────────────────────────────
+function initAnalyticsPage() {
+    initAnalyticsChartForTab('trend');
+}
+
+function initAnalyticsChartForTab(tab) {
+    if (tab === 'trend')   { destroyChart('revenueChart'); destroyChart('monthTrendChart'); initRevenueChart(); initMonthTrendChart(); renderWeekHeatmap(); }
+    if (tab === 'product') { destroyChart('salesRankChart'); initSalesRankChart(); }
+    if (tab === 'waste')   { destroyChart('wasteChart'); destroyChart('prodVsSalesChart'); initWasteChart(); initProdVsSalesChart(); }
+    if (tab === 'cost')    { destroyChart('costPieChart'); destroyChart('costTrendChart'); initCostPieChart(); initCostTrendChart(); }
+}
+
+// ─── 分析 > 銷售趨勢：圖表 ───────────────────────────────
+function initRevenueChart() {
+    const ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+    charts['revenueChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['5/8','5/9','5/10','5/11','5/12','5/13','5/14'],
+            datasets: [{ data: [58000,62000,55000,68000,72000,65000,70000],
+                backgroundColor(c){ const v=c.parsed.y; return v===72000?'#16A34A':v===55000?'#DC2626':'#C49A2B'; },
+                borderRadius:6, barThickness:28 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{
+                y:{ beginAtZero:true, ticks:{ callback:v=>'NT$ '+(v/1000)+'k', color:'#8D9094', font:{size:11} }, grid:{color:'#E8DDD0'} },
+                x:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
+            }
+        }
+    });
+}
+
+function initMonthTrendChart() {
+    const ctx = document.getElementById('monthTrendChart');
+    if (!ctx) return;
+    const labels = Array.from({length:30}, (_,i)=> `5/${i+1}`);
+    const data = [52,55,48,60,65,70,58,62,55,68,72,65,70,60,63,58,66,71,67,64,69,72,68,71,73,65,69,70,68,70];
+    charts['monthTrendChart'] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{
+            data, borderColor:'#C49A2B', backgroundColor:'rgba(196,154,43,0.08)',
+            tension:0.4, fill:true, pointRadius:0, pointHoverRadius:4, pointBackgroundColor:'#C49A2B'
+        }] },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{
+                y:{ beginAtZero:false, ticks:{ callback:v=>'NT$ '+(v)+'K', color:'#8D9094', font:{size:10} }, grid:{color:'#E8DDD0'} },
+                x:{ ticks:{ maxTicksLimit:6, color:'#3D2B1F', font:{size:10} }, grid:{display:false} }
+            }
+        }
+    });
+}
+
+function renderWeekHeatmap() {
+    const sales = [48000, 52000, 55000, 63000, 72000, 80000, 70000]; // Mon–Sun avg
+    const max = Math.max(...sales);
+    const el = document.getElementById('weekHeatmap');
+    if (!el) return;
+    el.innerHTML = sales.map(v => {
+        const ratio = v / max;
+        const bg = ratio > 0.8 ? '#3D2B1F' : ratio > 0.55 ? '#C49A2B' : '#E8DDD0';
+        const color = ratio > 0.3 ? 'white' : '#3D2B1F';
+        return `<div class="heatmap-cell" style="background:${bg};color:${color};font-size:10px;">NT$${Math.round(v/1000)}K</div>`;
+    }).join('');
+}
+
+// ─── 分析 > 品項表現 ────────────────────────────────────
+function initSalesRankChart() {
+    const ctx = document.getElementById('salesRankChart');
+    if (!ctx) return;
+    charts['salesRankChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['法國麵包','可頌','吐司','蛋糕捲','起司蛋糕','貝果','丹麥','馬芬'],
+            datasets: [{ data:[315,266,224,126,84,70,58,42],
+                backgroundColor:'#C49A2B', borderRadius:4, barThickness:16 }]
+        },
+        options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{
+                x:{ beginAtZero:true, ticks:{color:'#8D9094', font:{size:10}}, grid:{color:'#E8DDD0'} },
+                y:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
+            }
+        }
+    });
+}
+
+
+// ─── 分析 > 損耗追蹤 ────────────────────────────────────
+function initWasteChart() {
+    const ctx = document.getElementById('wasteChart');
+    if (!ctx) return;
+    charts['wasteChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['起司蛋糕','蛋糕捲','馬芬','可頌','吐司','貝果','法國麵包'],
+            datasets: [{ data:[18.2,12.4,10.1,7.8,6.3,5.0,3.4],
+                backgroundColor(c){ const v=c.parsed.x; return v>12?'#DC2626':v>8?'#C49A2B':'#16A34A'; },
+                borderRadius:4, barThickness:16 }]
+        },
+        options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{
+                x:{ beginAtZero:true, max:25, ticks:{ callback:v=>v+'%', color:'#8D9094', font:{size:10} }, grid:{color:'#E8DDD0'} },
+                y:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
+            }
+        }
+    });
+}
+
+function initProdVsSalesChart() {
+    const ctx = document.getElementById('prodVsSalesChart');
+    if (!ctx) return;
+    charts['prodVsSalesChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['5/8','5/9','5/10','5/11','5/12','5/13','5/14'],
+            datasets: [
+                { label:'出爐量', data:[320,330,300,340,350,325,312], backgroundColor:'#E8DDD0', borderRadius:4, barThickness:18 },
+                { label:'銷售量', data:[295,308,274,318,336,298,289], backgroundColor:'#3D2B1F', borderRadius:4, barThickness:18 },
+            ]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:true, labels:{ color:'#3D2B1F', font:{size:11}, boxWidth:12 } } },
+            scales:{
+                y:{ beginAtZero:false, min:260, ticks:{color:'#8D9094', font:{size:10}}, grid:{color:'#E8DDD0'} },
+                x:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
+            }
+        }
+    });
+}
+
+// ─── 分析 > 成本結構 ────────────────────────────────────
+function initCostPieChart() {
+    const ctx = document.getElementById('costPieChart');
+    if (!ctx) return;
+    charts['costPieChart'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['日清山茶花強力粉','菲仕蘭發酵奶油','雞蛋','中澤鮮奶油','砂糖','其他'],
+            datasets: [{ data:[28,18,14,12,8,20],
+                backgroundColor:['#3D2B1F','#C49A2B','#EE7642','#F0D98B','#E8DDD0','#8D9094'],
+                borderWidth:0, hoverOffset:6 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'bottom', labels:{ color:'#3D2B1F', font:{size:11}, boxWidth:12, padding:8 } } }
+        }
+    });
+}
+
+function initCostTrendChart() {
+    const ctx = document.getElementById('costTrendChart');
+    if (!ctx) return;
+    charts['costTrendChart'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['12月','1月','2月','3月','4月','5月'],
+            datasets: [
+                { label:'原料成本', data:[460,472,465,480,488,502], borderColor:'#C49A2B', backgroundColor:'rgba(196,154,43,0.1)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#C49A2B' },
+                { label:'人力成本', data:[220,225,220,228,232,235], borderColor:'#3D2B1F', backgroundColor:'rgba(61,43,31,0.05)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#3D2B1F' },
+            ]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:true, labels:{ color:'#3D2B1F', font:{size:11}, boxWidth:12 } } },
+            scales:{
+                y:{ beginAtZero:false, ticks:{ callback:v=>v+'K', color:'#8D9094', font:{size:10} }, grid:{color:'#E8DDD0'} },
+                x:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
+            }
+        }
+    });
+}
+
+// ─── 補貨分析資料 ────────────────────────────────────────
+const PRODUCT_DATA = {
+    french:   { avgDaily:45, forecast7:315, chartData:[42,45,40,48,50,44,45],
+        ingredients:[
+            { name:'日清百合花法國粉', perUnit:'0.5 kg/個', used7:'158 kg', est7:'160 kg' },
+            { name:'菲仕蘭發酵奶油',       perUnit:'0.03 kg/個', used7:'9.5 kg', est7:'9.6 kg' },
+            { name:'燕子牌即發酵母',         perUnit:'0.008 kg/個', used7:'2.5 kg', est7:'2.5 kg' },
+        ],
+        restocks:[
+            { name:'日清百合花法國粉', badge:'緊急', badgeClass:'badge-danger', current:15, safe:50, daysLeft:3, suggest:50, progress:30, progressColor:'#DC2626', bgColor:'#FFF5F5', borderColor:'#FEE2E2', pricePerUnit:100 },
+            { name:'菲仕蘭發酵奶油',       badge:'警示', badgeClass:'badge-warning', current:8, safe:20, daysLeft:5, suggest:25, progress:40, progressColor:'#C49A2B', bgColor:'#FFFBEB', borderColor:'#FEF3C7', pricePerUnit:200 },
+        ]
+    },
+    croissant:{ avgDaily:38, forecast7:266, chartData:[35,38,32,40,42,37,38],
+        ingredients:[
+            { name:'日清山茶花強力粉', perUnit:'0.08 kg/個', used7:'21 kg', est7:'21 kg' },
+            { name:'菲仕蘭發酵奶油', perUnit:'0.06 kg/個', used7:'16 kg', est7:'16 kg' },
+            { name:'全蛋',     perUnit:'0.02 kg/個', used7:'5.3 kg', est7:'5.3 kg' },
+        ],
+        restocks:[
+            { name:'菲仕蘭發酵奶油', badge:'警示', badgeClass:'badge-warning', current:8, safe:20, daysLeft:5, suggest:30, progress:40, progressColor:'#C49A2B', bgColor:'#FFFBEB', borderColor:'#FEF3C7', pricePerUnit:200 },
+            { name:'日清山茶花強力粉', badge:'正常', badgeClass:'badge-success', current:45, safe:30, daysLeft:14, suggest:20, progress:80, progressColor:'#16A34A', bgColor:'#F0FDF4', borderColor:'#D1FAE5', pricePerUnit:60 },
+        ]
+    },
+    toast:    { avgDaily:32, forecast7:224, chartData:[30,33,28,35,36,31,32],
+        ingredients:[
+            { name:'日清山茶花強力粉', perUnit:'0.25 kg/條', used7:'56 kg', est7:'57 kg' },
+            { name:'鮮奶',     perUnit:'0.15 kg/條', used7:'34 kg', est7:'34 kg' },
+            { name:'燕子牌即發酵母',   perUnit:'0.004 kg/條', used7:'0.9 kg', est7:'0.9 kg' },
+        ],
+        restocks:[
+            { name:'日清山茶花強力粉', badge:'警示', badgeClass:'badge-warning', current:20, safe:40, daysLeft:7, suggest:40, progress:50, progressColor:'#C49A2B', bgColor:'#FFFBEB', borderColor:'#FEF3C7', pricePerUnit:60 },
+            { name:'燕子牌即發酵母',   badge:'緊急', badgeClass:'badge-danger', current:0.5, safe:3, daysLeft:2, suggest:5, progress:17, progressColor:'#DC2626', bgColor:'#FFF5F5', borderColor:'#FEE2E2', pricePerUnit:300 },
+        ]
+    },
+    cake:     { avgDaily:18, forecast7:126, chartData:[15,18,14,20,22,17,18],
+        ingredients:[
+            { name:'雞蛋',     perUnit:'3顆/條', used7:'378顆', est7:'380顆' },
+            { name:'日清紫蘿蘭薄力粉', perUnit:'0.06 kg/條', used7:'7.6 kg', est7:'7.6 kg' },
+            { name:'中澤純生鮮奶油',   perUnit:'0.1 kg/條', used7:'12.6 kg', est7:'12.6 kg' },
+        ],
+        restocks:[
+            { name:'中澤純生鮮奶油', badge:'正常', badgeClass:'badge-success', current:30, safe:15, daysLeft:20, suggest:0, progress:90, progressColor:'#16A34A', bgColor:'#F0FDF4', borderColor:'#D1FAE5', pricePerUnit:180 },
+        ]
+    },
+    cheese:   { avgDaily:12, forecast7:84, chartData:[10,12,9,14,15,11,13],
+        ingredients:[
+            { name:'MG奶油乳酪', perUnit:'0.12 kg/個', used7:'10 kg', est7:'10 kg' },
+            { name:'餅乾底',   perUnit:'0.05 kg/個', used7:'4.2 kg', est7:'4.2 kg' },
+            { name:'雞蛋',     perUnit:'1顆/個', used7:'84顆', est7:'84顆' },
+        ],
+        restocks:[
+            { name:'MG奶油乳酪', badge:'警示', badgeClass:'badge-warning', current:5, safe:12, daysLeft:6, suggest:15, progress:42, progressColor:'#C49A2B', bgColor:'#FFFBEB', borderColor:'#FEF3C7', pricePerUnit:250 },
+        ]
+    },
+};
+
+function initSalesChart() {
+    const ctx = document.getElementById('salesTrendChart');
+    if (!ctx) return;
+    const d = PRODUCT_DATA[document.getElementById('productSelect').value];
+    charts['salesTrendChart'] = new Chart(ctx, {
+        type: 'line',
+        data: { labels:['5/8','5/9','5/10','5/11','5/12','5/13','5/14'],
+            datasets:[{ data:d.chartData, borderColor:'#C49A2B', backgroundColor:'rgba(196,154,43,0.1)',
+                tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#C49A2B' }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+            scales:{ y:{beginAtZero:true, ticks:{color:'#8D9094',font:{size:11}}, grid:{color:'#E8DDD0'}}, x:{ticks:{color:'#3D2B1F',font:{size:11}}, grid:{display:false}} } }
+    });
+}
+
+function renderAnalysisData() {
+    const p = document.getElementById('productSelect').value;
+    const d = PRODUCT_DATA[p];
+    document.getElementById('avgDaily').textContent = d.avgDaily;
+    document.getElementById('forecast7').textContent = d.forecast7;
+
+    document.getElementById('ingredientList').innerHTML = d.ingredients.map(ing => `
+        <div style="border-bottom:1px solid var(--warm-dark);padding:10px 0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-weight:600;color:var(--primary);font-size:14px;">${ing.name}</span>
+                <span style="color:var(--neutral-500);font-size:13px;">${ing.perUnit}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--neutral-500);">近7日: ${ing.used7}</span>
+                <span style="color:var(--accent);font-weight:600;">預估: ${ing.est7}</span>
+            </div>
+        </div>
+    `).join('');
+
+    if (d.restocks.length === 0) {
+        document.getElementById('restockList').innerHTML = `<div style="text-align:center;padding:20px;color:var(--neutral-500);"><div style="font-size:28px;margin-bottom:8px;">✅</div><div>庫存充足，無需補貨</div></div>`;
+        return;
+    }
+    document.getElementById('restockList').innerHTML = d.restocks.map(r => `
+        <div class="card" style="background:${r.bgColor};border-color:${r.borderColor};margin-bottom:10px;">
+            <div style="flex:1;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span class="${r.badgeClass}">${r.badge}</span>
+                    <span style="font-weight:600;color:var(--primary);font-size:14px;">${r.name}</span>
+                </div>
+                <div style="font-size:13px;color:var(--neutral-500);margin-bottom:8px;">
+                    當前 ${r.current}kg｜安全 ${r.safe}kg｜${r.daysLeft}天後缺貨
+                </div>
+                <div class="progress-bar" style="background:${r.borderColor};">
+                    <div class="progress-fill" style="width:${r.progress}%;background:${r.progressColor};"></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--cta);font-weight:700;font-size:17px;">建議 ${r.suggest} kg</span>
+                <button class="btn-${r.badge==='緊急'?'cta':'accent'}" onclick="addToCart('${r.name}',${r.suggest},${r.pricePerUnit})" style="padding:8px 14px;font-size:13px;">加入採購</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateAnalysis() {
+    destroyChart('salesTrendChart');
+    initSalesChart();
+    renderAnalysisData();
+}
+
+// ─── 食譜靈感 ─────────────────────────────────────────────
+// 苗林品項標記格式：{ name, amount, ml:true（苗林）, ml:false（非苗林）}
+const ML = (name, amount) => ({ name, amount, isMiaolin: true });
+const EX = (name, amount) => ({ name, amount, isMiaolin: false });
+
+const RECIPES = [
+    // ── 軟式麵包 ──────────────────────────────────────────
+    { name:'北海道牛奶吐司', category:'軟式麵包', style:'日系', texture:['軟綿','入口即化'], flavor:['甜','奶香'],
+      description:'湯種法製作，組織綿密入口即化，是全年最穩定的暢銷品',
+      ingredients:[ ML('日清山茶花強力粉','600g'), EX('北海道鮮奶','300ml'), ML('中澤純生鮮奶油','60ml'), ML('Campina無水奶油','60g'), EX('砂糖','50g'), ML('燕子牌即發酵母','6g') ],
+      cost:70, price:155, margin:54.8 },
+    { name:'草莓大福吐司', category:'軟式麵包', style:'日系', texture:['軟綿'], flavor:['甜','果香','奶香'],
+      description:'鮮草莓搭配北海道奶油餡，日式和果子風格融入吐司，視覺討喜',
+      ingredients:[ ML('日清山茶花強力粉','600g'), EX('新鮮草莓','200g'), ML('中澤純生鮮奶油','150g'), EX('白豆沙','100g'), ML('Campina無水奶油','40g'), ML('燕子牌即發酵母','6g') ],
+      cost:105, price:230, margin:54.3 },
+    { name:'黑糖薑汁軟歐', category:'軟式麵包', style:'台式', texture:['軟綿','Q彈'], flavor:['甜'],
+      description:'台灣黑糖與老薑汁揉入麵糰，暖胃養身，適合秋冬季節限定',
+      ingredients:[ ML('日清山茶花強力粉','500g'), EX('台灣黑糖','60g'), EX('老薑汁','40ml'), EX('肉桂粉','3g'), ML('燕子牌即發酵母','5g'), ML('Campina無水奶油','30g') ],
+      cost:68, price:150, margin:54.7 },
+    { name:'芋泥菠蘿麵包', category:'軟式麵包', style:'台式', texture:['軟綿','酥脆'], flavor:['甜'],
+      description:'台式菠蘿外皮酥脆，內層芋泥餡綿密，在地伴手禮首選',
+      ingredients:[ ML('日清山茶花強力粉','480g'), EX('芋頭泥','200g'), EX('椰漿','50ml'), ML('Campina無水奶油','60g'), ML('日清紫蘿蘭薄力粉','100g'), ML('燕子牌即發酵母','5g') ],
+      cost:80, price:180, margin:55.6 },
+    { name:'冷萃咖啡奶油包', category:'軟式麵包', style:'韓系', texture:['軟綿'], flavor:['苦甜','奶香'],
+      description:'冷萃咖啡揉入麵糰，填入奶油乳酪餡，韓系咖啡店風格，IG打卡首選',
+      ingredients:[ ML('日清山茶花強力粉','480g'), EX('冷萃咖啡','160ml'), ML('MG奶油乳酪','120g'), EX('砂糖','25g'), ML('燕子牌即發酵母','5g') ],
+      cost:85, price:185, margin:54.1 },
+
+    // ── 硬式歐包 ──────────────────────────────────────────
+    { name:'經典法式長棍', category:'硬式歐包', style:'法式', texture:['酥脆','Q彈'], flavor:['鹹'],
+      description:'老麵種增添風味，外皮酥脆劃紋漂亮，是烘焙店的鎮店基本款',
+      ingredients:[ ML('日清百合花法國粉','500g'), EX('老麵','80g'), EX('鹽','10g'), ML('燕子牌即發酵母','3g'), EX('水','330ml') ],
+      cost:45, price:100, margin:55.0 },
+    { name:'迷迭香橄欖佛卡夏', category:'硬式歐包', style:'法式', texture:['Q彈','酥脆'], flavor:['鹹'],
+      description:'義式薄餅麵包，橄欖油風味突出，撒上粗鹽與迷迭香，適合佐餐',
+      ingredients:[ ML('日清百合花法國粉','400g'), EX('橄欖油','60ml'), EX('新鮮迷迭香','8g'), EX('黑橄欖','60g'), EX('粗海鹽','5g'), ML('燕子牌即發酵母','4g') ],
+      cost:55, price:130, margin:57.7 },
+    { name:'酸種鄉村麵包', category:'硬式歐包', style:'法式', texture:['酥脆','紮實'], flavor:['酸甜','鹹'],
+      description:'自養酵種發酵48小時，有明顯乳酸香氣，切面氣孔大，吸引麵包愛好者',
+      ingredients:[ ML('日清傳奇強力粉','350g'), ML('日清百合花法國粉','150g'), EX('自養酵種','200g'), EX('鹽','10g'), EX('水','380ml') ],
+      cost:60, price:160, margin:62.5 },
+    { name:'味噌核桃歐包', category:'硬式歐包', style:'日系', texture:['紮實','Q彈'], flavor:['鹹','堅果'],
+      description:'白味噌融入麵糰增加鮮味，烤核桃提供油脂與嚼感，鹹香層次豐富',
+      ingredients:[ ML('日清山茶花強力粉','500g'), EX('白味噌','30g'), EX('烤核桃','80g'), EX('蜂蜜','20g'), ML('燕子牌即發酵母','5g') ],
+      cost:85, price:185, margin:54.1 },
+    { name:'椰香芒果貝果', category:'硬式歐包', style:'台式', texture:['Q彈','紮實'], flavor:['甜','果香'],
+      description:'椰漿揉麵讓貝果帶有熱帶香氣，芒果丁夾心，夏季限定視覺爆炸款',
+      ingredients:[ ML('日清山茶花強力粉','500g'), EX('椰漿','150ml'), EX('新鮮芒果','180g'), EX('椰糖','30g'), ML('燕子牌即發酵母','5g') ],
+      cost:90, price:200, margin:55.0 },
+
+    // ── 丹麥酥皮 ──────────────────────────────────────────
+    { name:'原味牛角可頌', category:'丹麥酥皮', style:'法式', texture:['酥脆'], flavor:['奶香','甜'],
+      description:'菲仕蘭發酵奶油折疊27層，外皮金黃酥脆、內層蜂巢分明，是法式烘焙的靈魂',
+      ingredients:[ ML('日清山茶花強力粉','500g'), ML('菲仕蘭發酵奶油','250g'), EX('砂糖','40g'), EX('全蛋','2顆'), ML('燕子牌即發酵母','8g'), EX('鮮奶','180ml') ],
+      cost:110, price:240, margin:54.2 },
+    { name:'抹茶紅豆可頌', category:'丹麥酥皮', style:'日系', texture:['酥脆'], flavor:['甜','苦甜'],
+      description:'森半抹茶粉揉入麵糰，夾入北海道紅豆餡，綠色層次驚豔，日系烘焙店必備',
+      ingredients:[ ML('日清山茶花強力粉','480g'), ML('森半抹茶粉','12g'), ML('菲仕蘭發酵奶油','240g'), EX('北海道紅豆餡','120g'), ML('燕子牌即發酵母','8g') ],
+      cost:120, price:260, margin:53.8 },
+    { name:'鹹奶油可頌', category:'丹麥酥皮', style:'韓系', texture:['酥脆'], flavor:['鹹甜','奶香'],
+      description:'韓國爆紅的鹹奶油可頌，底部沾糖烤至焦糖化，內填鹹奶油霜，話題性極強',
+      ingredients:[ ML('日清山茶花強力粉','500g'), ML('菲仕蘭發酵奶油','250g'), EX('砂糖','60g'), EX('海鹽','4g'), ML('中澤純生鮮奶油','80g'), ML('燕子牌即發酵母','8g') ],
+      cost:115, price:250, margin:54.0 },
+    { name:'栗子奶油丹麥', category:'丹麥酥皮', style:'法式', texture:['酥脆','軟綿'], flavor:['甜','奶香'],
+      description:'手工栗子奶油餡配法式丹麥，秋冬季節限定，精緻感十足適合禮盒',
+      ingredients:[ ML('日清山茶花強力粉','500g'), ML('菲仕蘭發酵奶油','250g'), EX('栗子泥','120g'), ML('中澤純生鮮奶油','80g'), EX('香草莢','1支') ],
+      cost:125, price:270, margin:53.7 },
+    { name:'72%黑巧丹麥', category:'丹麥酥皮', style:'法式', texture:['酥脆'], flavor:['苦甜'],
+      description:'L\'Opera 72%巧克力捲入酥皮，切開後巧克力紋路完美，是法式烘焙技術的展示',
+      ingredients:[ ML('日清山茶花強力粉','500g'), ML('菲仕蘭發酵奶油','250g'), EX('L\'Opera 70%巧克力','150g'), ML('燕子牌即發酵母','8g'), EX('砂糖','35g') ],
+      cost:130, price:280, margin:53.6 },
+
+    // ── 蛋糕 ──────────────────────────────────────────────
+    { name:'北海道戚風蛋糕', category:'蛋糕', style:'日系', texture:['軟綿','入口即化'], flavor:['甜','奶香'],
+      description:'以中澤鮮奶油取代沙拉油，蛋糕體更細緻，鮮奶香濃郁，全年最穩定的蛋糕款',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','100g'), ML('中澤純生鮮奶油','100ml'), EX('雞蛋','5顆'), EX('砂糖','80g'), EX('鮮奶','60ml'), EX('沙拉油','40ml') ],
+      cost:85, price:200, margin:57.5 },
+    { name:'抹茶紅豆蛋糕捲', category:'蛋糕', style:'日系', texture:['軟綿'], flavor:['甜','苦甜'],
+      description:'森半抹茶戚風捲蛋糕，搭配北海道紅豆鮮奶油，是伴手禮禮盒的最佳主角',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','80g'), ML('森半抹茶粉','10g'), ML('中澤純生鮮奶油','200ml'), EX('北海道紅豆','100g'), EX('雞蛋','4顆'), EX('砂糖','70g') ],
+      cost:95, price:220, margin:56.8 },
+    { name:'黑巧克力熔岩蛋糕', category:'蛋糕', style:'法式', texture:['軟綿'], flavor:['苦甜'],
+      description:'法式經典，切開流出溫熱巧克力漿，限量每日20個製造稀缺感',
+      ingredients:[ ML('L\'Opera 70%巧克力','150g'), ML('Campina無水奶油','80g'), ML('日清紫蘿蘭薄力粉','30g'), EX('雞蛋','3顆'), EX('砂糖','40g') ],
+      cost:110, price:240, margin:54.2 },
+    { name:'焦糖海鹽磅蛋糕', category:'蛋糕', style:'法式', texture:['紮實'], flavor:['苦甜','鹹'],
+      description:'法式磅蛋糕淋上手工焦糖海鹽醬，鹹甜對比強烈，切片販售毛利高',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','200g'), ML('Campina無水奶油','200g'), EX('雞蛋','4顆'), EX('砂糖','180g'), EX('海鹽','3g'), ML('中澤純生鮮奶油','60ml') ],
+      cost:90, price:200, margin:55.0 },
+
+    // ── 塔派 ──────────────────────────────────────────────
+    { name:'法式草莓水果塔', category:'塔派', style:'法式', texture:['酥脆','軟綿'], flavor:['甜','酸甜','果香'],
+      description:'奶油塔皮加卡士達醬，鋪上當季新鮮草莓，是烘焙展示櫃的視覺主角',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','200g'), ML('Campina無水奶油','120g'), ML('中澤純生鮮奶油','200ml'), EX('新鮮草莓','300g'), EX('雞蛋','3顆'), EX('砂糖','60g') ],
+      cost:120, price:280, margin:57.1 },
+    { name:'日式起司蛋糕塔', category:'塔派', style:'日系', texture:['酥脆','入口即化'], flavor:['甜','酸甜','奶香'],
+      description:'濃郁奶油乳酪餡填入酥脆塔皮，上層用噴槍炙燒，日系烘焙店必備款',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','180g'), ML('MG奶油乳酪','300g'), ML('Campina無水奶油','100g'), ML('中澤純生鮮奶油','100ml'), EX('雞蛋','3顆'), EX('砂糖','80g') ],
+      cost:130, price:290, margin:55.2 },
+    { name:'檸檬蛋白塔', category:'塔派', style:'法式', texture:['酥脆','入口即化'], flavor:['酸甜'],
+      description:'法式酸度明顯的檸檬凝乳，搭配義大利蛋白霜，酸甜層次豐富，夏季熱銷',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','180g'), ML('Campina無水奶油','100g'), EX('新鮮檸檬','4顆'), EX('雞蛋','4顆'), EX('砂糖','120g'), ML('中澤純生鮮奶油','50ml') ],
+      cost:100, price:230, margin:56.5 },
+
+    // ── 小點心 ────────────────────────────────────────────
+    { name:'法式費南雪', category:'小點心', style:'法式', texture:['酥脆','軟綿'], flavor:['甜','奶香','堅果'],
+      description:'焦化奶油（beurre noisette）帶出堅果香氣，外酥內軟，禮盒裝毛利高',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','100g'), ML('菲仕蘭發酵奶油','120g'), EX('杏仁粉','80g'), EX('蛋白','4顆'), EX('糖粉','120g') ],
+      cost:70, price:160, margin:56.3 },
+    { name:'抹茶白巧馬卡龍', category:'小點心', style:'法式', texture:['酥脆','Q彈'], flavor:['甜','苦甜'],
+      description:'森半抹茶馬卡龍殼，夾入白巧克力甘那許，少量多樣化經營的精品點心',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','20g'), ML('森半抹茶粉','8g'), EX('杏仁粉','120g'), EX('蛋白','80g'), EX('砂糖','200g'), EX('白巧克力','80g') ],
+      cost:95, price:220, margin:56.8 },
+    { name:'韓式奶油餅乾', category:'小點心', style:'韓系', texture:['酥脆'], flavor:['甜','奶香'],
+      description:'韓系厚奶油夾心餅乾，IG高顏值設計，訂製形狀做節慶禮盒吸引年輕客群',
+      ingredients:[ ML('日清紫蘿蘭薄力粉','250g'), ML('Campina無水奶油','150g'), ML('中澤純生鮮奶油','60ml'), EX('糖粉','80g'), EX('香草精','3ml') ],
+      cost:65, price:150, margin:56.7 },
+    { name:'美式黑巧布朗尼', category:'小點心', style:'美式', texture:['紮實'], flavor:['苦甜'],
+      description:'高比例L\'Opera巧克力，濕潤紮實的布朗尼，切塊販售或整盤外帶',
+      ingredients:[ ML('L\'Opera 70%巧克力','200g'), ML('Campina無水奶油','100g'), ML('日清紫蘿蘭薄力粉','80g'), EX('雞蛋','3顆'), EX('黑糖','150g'), EX('核桃','60g') ],
+      cost:100, price:220, margin:54.5 },
+];
+
+// 最愛清單狀態
+let favorites = {}; // key: ingredient name
+
+// ─── 篩選狀態 ───────────────────────────────────────────
+let filterState = { category: null, style: null, texture: [], flavor: [], required: '' };
+
+function toggleCat(el) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    if (filterState.category === el.dataset.cat) {
+        filterState.category = null;
+    } else {
+        el.classList.add('active');
+        filterState.category = el.dataset.cat;
+    }
+    updateActiveFilterCount();
+}
+
+function toggleFilter(el) {
+    const group = el.dataset.group, val = el.dataset.val;
+    if (group === 'style') {
+        document.querySelectorAll('.filter-tag[data-group="style"]').forEach(t => t.classList.remove('active'));
+        filterState.style = filterState.style === val ? null : val;
+        if (filterState.style) el.classList.add('active');
+    } else {
+        el.classList.toggle('active');
+        const arr = filterState[group];
+        const idx = arr.indexOf(val);
+        idx >= 0 ? arr.splice(idx, 1) : arr.push(val);
+    }
+    updateActiveFilterCount();
+}
+
+function updateActiveFilterCount() {
+    const n = (filterState.category ? 1 : 0) + (filterState.style ? 1 : 0) +
+              filterState.texture.length + filterState.flavor.length +
+              (document.getElementById('requiredIng')?.value.trim() ? 1 : 0);
+    const badge = document.getElementById('activeFilterCount');
+    if (badge) { badge.textContent = n; badge.style.display = n > 0 ? 'inline' : 'none'; }
+}
+
+function toggleFilterPanel() {
+    const panel = document.getElementById('filterPanel');
+    const arrow = document.getElementById('filterArrow');
+    const open = panel.style.display === 'block';
+    panel.style.display = open ? 'none' : 'block';
+    arrow.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function quickCategory(cat) {
+    document.querySelectorAll('.cat-btn').forEach(b => {
+        if (b.dataset.cat === cat) { b.classList.add('active'); filterState.category = cat; }
+        else b.classList.remove('active');
+    });
+    updateActiveFilterCount();
+}
+
+function scoreRecipe(r) {
+    let score = 0;
+    const req = document.getElementById('requiredIng')?.value.trim().toLowerCase();
+    if (filterState.category) score += r.category === filterState.category ? 4 : 0;
+    if (filterState.style)    score += r.style    === filterState.style    ? 3 : 0;
+    filterState.texture.forEach(t => { if (r.texture.includes(t)) score += 2; });
+    filterState.flavor.forEach(f  => { if (r.flavor.includes(f))  score += 2; });
+    if (req && r.ingredients.some(i => i.name.toLowerCase().includes(req))) score += 5;
+    return score;
+}
+
+async function generateRecipes() {
+    filterState.required = document.getElementById('requiredIng')?.value.trim() || '';
+    const hasAnyFilter = filterState.category || filterState.style ||
+        filterState.texture.length || filterState.flavor.length ||
+        filterState.required;
+
+    let picks;
+    if (!hasAnyFilter) {
+        // 完全沒選 → 隨機
+        picks = [...RECIPES].sort(() => Math.random() - 0.5).slice(0, 3);
+    } else {
+        // 評分排序，永遠能找到 3 個
+        const scored = RECIPES.map(r => ({ r, s: scoreRecipe(r) }))
+            .sort((a, b) => b.s - a.s || Math.random() - 0.5);
+        picks = scored.slice(0, 3).map(x => x.r);
+        const topScore = scored[0].s;
+        const label = topScore > 0 ? `依條件推薦` : `隨機推薦（條件無完全符合）`;
+        setTimeout(() => showToast(label, 'default', 2000), 1200);
+    }
+    await runRecipeAnimation(picks);
+}
+
+async function feelLucky() {
+    const shuffled = [...RECIPES].sort(() => Math.random() - 0.5);
+    await runRecipeAnimation(shuffled.slice(0, 3));
+}
+
+async function runRecipeAnimation(recipes) {
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading-spinner"></div> AI 產生中...';
+    document.getElementById('recipeResults').innerHTML = [1,2,3].map(() => `
+        <div class="recipe-skeleton">
+            <div class="skeleton-line" style="width:55%;height:17px;margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:88%;"></div>
+            <div class="skeleton-line" style="width:70%;margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:100%;height:80px;border-radius:8px;"></div>
+        </div>`).join('');
+    await new Promise(r => setTimeout(r, 1000));
+    btn.disabled = false;
+    btn.innerHTML = '🤖 產生食譜';
+    renderRecipeCards(recipes);
+    showToast(`推薦 ${recipes.length} 個食譜！`, 'success');
+}
+
+function renderRecipeCards(recipes) {
+    document.getElementById('recipeResults').innerHTML = recipes.map((r, i) => {
+        const tags = [r.category, r.style, ...r.texture, ...r.flavor]
+            .map(t => `<span style="display:inline-block;padding:2px 8px;background:var(--warm);border-radius:10px;font-size:11px;color:var(--neutral-500);margin:2px;">${t}</span>`)
+            .join('');
+
+        const ingHtml = r.ingredients.map(ing => {
+            const saved = favorites[ing.name];
+            if (ing.isMiaolin) {
+                return `<div class="miaolin-ing">
+                    <div style="font-size:12px;color:var(--primary);">
+                        <span style="color:var(--accent);font-weight:700;margin-right:3px;">★</span>${ing.name} <span style="color:var(--neutral-500);">${ing.amount}</span>
+                    </div>
+                    <button class="ing-fav-btn ${saved ? 'saved' : ''}" id="favbtn-${encodeId(ing.name)}"
+                        onclick="toggleFavorite('${ing.name.replace(/'/g,"\\'")}')">
+                        ${saved ? '已收藏' : '+ 最愛'}
+                    </button>
+                </div>`;
+            }
+            return `<div style="font-size:12px;color:var(--neutral-500);padding:5px 0;border-bottom:1px solid var(--warm-dark);">• ${ing.name} <span style="float:right">${ing.amount}</span></div>`;
+        }).join('');
+
+        return `<div class="recipe-card" style="animation-delay:${i*0.07}s;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+                <h3 style="color:var(--primary);font-size:16px;font-weight:700;flex:1;margin:0;">${r.name}</h3>
+            </div>
+            <div style="margin-bottom:8px;">${tags}</div>
+            <p style="color:var(--neutral-500);font-size:13px;margin-bottom:10px;line-height:1.5;">${r.description}</p>
+            <div style="background:var(--canvas);padding:10px;border-radius:8px;margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">
+                    建議原料 <span style="color:var(--accent);font-weight:400;">★ 苗林品項可直接加入最愛</span>
+                </div>
+                ${ingHtml}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function encodeId(name) { return name.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+// ─── 最愛系統 ─────────────────────────────────────────────
+function toggleFavorite(name) {
+    if (favorites[name]) {
+        delete favorites[name];
+        showToast(`已從最愛移除：${name}`, 'default', 1400);
+    } else {
+        favorites[name] = true;
+        showToast(`已加入最愛：${name}`, 'success', 1400);
+    }
+    // 更新按鈕狀態
+    const btn = document.getElementById('favbtn-' + encodeId(name));
+    if (btn) { btn.textContent = favorites[name] ? '已收藏' : '+ 最愛'; btn.classList.toggle('saved', !!favorites[name]); }
+    updateFavCount();
+}
+
+function updateFavCount() {
+    const n = Object.keys(favorites).length;
+    document.getElementById('favCount').textContent = n;
+}
+
+function showFavorites() {
+    const list = document.getElementById('favList');
+    const keys = Object.keys(favorites);
+    if (keys.length === 0) {
+        list.innerHTML = '<p style="color:var(--neutral-500);text-align:center;padding:20px;">尚未收藏任何苗林品項<br><span style="font-size:12px;">在食譜原料旁點「+ 最愛」即可收藏</span></p>';
+    } else {
+        list.innerHTML = keys.map(name => `
+            <div class="fav-item">
+                <div>
+                    <span style="color:var(--accent);font-weight:700;margin-right:4px;">★</span>
+                    <span style="color:var(--primary);font-weight:600;">${name}</span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button onclick="addToCart('${name.replace(/'/g,"\\'")}', 1, 100)" class="btn-accent" style="padding:4px 10px;font-size:11px;">加採購</button>
+                    <button onclick="toggleFavorite('${name.replace(/'/g,"\\'")}');renderFavList()" style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:16px;line-height:1;">×</button>
+                </div>
+            </div>`).join('');
+    }
+    document.getElementById('favModal').classList.add('active');
+}
+
+function renderFavList() { showFavorites(); }
+
+function closeFavorites() { document.getElementById('favModal').classList.remove('active'); }
+function handleFavBackdrop(e) { if (e.target === document.getElementById('favModal')) closeFavorites(); }
+
+function orderAllFavorites() {
+    const keys = Object.keys(favorites);
+    if (!keys.length) { showToast('最愛清單是空的', 'warning'); return; }
+    keys.forEach(name => addToCart(name, 1, 100));
+    closeFavorites();
+    showToast(`已將 ${keys.length} 項加入採購單`, 'success');
+}
+
+// ─── 採購車 ───────────────────────────────────────────────
+function addToCart(name, qty, pricePerUnit) {
+    const p = pricePerUnit || 100;
+    const ex = cart.find(i => i.name === name);
+    if (ex) { ex.quantity += qty; ex.price = ex.quantity * p; }
+    else cart.push({ name, quantity:qty, unitPrice:p, price:qty*p });
+    updateCartUI();
+    showToast(`${name} ${qty}kg 已加入採購清單`, 'success');
+}
+
+function updateCartUI() {
+    document.getElementById('cartCount').textContent = cart.length;
+    document.getElementById('cartFab').style.display = cart.length > 0 ? 'flex' : 'none';
+}
+
+function showCart() {
+    const items = document.getElementById('cartItems');
+    const total = document.getElementById('cartTotal');
+    if (!cart.length) {
+        items.innerHTML = '<p style="color:var(--neutral-500);text-align:center;padding:20px;">採購清單是空的</p>';
+        total.textContent = 'NT$ 0';
+    } else {
+        items.innerHTML = cart.map((it, i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+                <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--primary);font-size:14px;margin-bottom:2px;">${it.name}</div>
+                    <div style="font-size:12px;color:var(--neutral-500);">${it.quantity} kg × NT$ ${it.unitPrice}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="font-weight:700;color:var(--accent);font-size:14px;">NT$ ${it.price.toLocaleString()}</div>
+                    <button onclick="removeFromCart(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:20px;line-height:1;">×</button>
+                </div>
+            </div>`).join('');
+        total.textContent = 'NT$ ' + cart.reduce((s,i) => s+i.price, 0).toLocaleString();
+    }
+    document.getElementById('cartModal').classList.add('active');
+}
+
+function closeCart() { document.getElementById('cartModal').classList.remove('active'); }
+function handleModalBackdrop(e) { if (e.target === document.getElementById('cartModal')) closeCart(); }
+
+function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); showCart(); }
+
+function submitOrder() {
+    if (!cart.length) { showToast('採購清單是空的！', 'warning'); return; }
+    cart = []; updateCartUI(); closeCart();
+    showToast('採購單已送出！苗林行將於24小時內聯繫確認。', 'success', 3500);
+}
+
+// ─── 出爐記錄 ────────────────────────────────────────────────
+let bakeLog = [];
+
+// 模擬 AI 辨識的 mock 資料（之後接真實 Vision API）
+const MOCK_SCAN_RESULTS = [
+    [
+        { name:'法國麵包', qty:28 },
+        { name:'可頌',     qty:24 },
+        { name:'吐司',     qty:12 },
+    ],
+    [
+        { name:'可頌',     qty:30 },
+        { name:'法國麵包', qty:18 },
+        { name:'蛋糕捲',   qty:8  },
+    ],
+    [
+        { name:'吐司',     qty:20 },
+        { name:'法國麵包', qty:32 },
+        { name:'貝果',     qty:15 },
+    ],
+];
+
+async function handleBakePhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 顯示 loading
+    const scanDiv = document.getElementById('scanResult');
+    scanDiv.style.display = 'block';
+    document.getElementById('scanItems').innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:20px;justify-content:center;">
+            <div class="loading-spinner" style="border-color:rgba(196,154,43,0.3);border-top-color:var(--accent);"></div>
+            <span style="color:var(--neutral-500);font-size:13px;">AI 辨識中...</span>
+        </div>`;
+    document.getElementById('scanAccuracy').textContent = '辨識中...';
+    scanDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+    await new Promise(r => setTimeout(r, 1800));
+
+    // Mock 辨識結果
+    const results = MOCK_SCAN_RESULTS[Math.floor(Math.random() * MOCK_SCAN_RESULTS.length)];
+    const accuracy = (82 + Math.floor(Math.random() * 12)) + '%';
+    document.getElementById('scanAccuracy').textContent = `信心度 ${accuracy}`;
+    document.getElementById('scanAccuracy').className = parseInt(accuracy) >= 90 ? 'badge-success' : 'badge-warning';
+
+    document.getElementById('scanItems').innerHTML = results.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+            <div style="flex:1;font-size:14px;font-weight:600;color:var(--primary);">${item.name}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <button onclick="adjustScanQty(${i},-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">−</button>
+                <input type="number" id="scanQty-${i}" value="${item.qty}" min="0"
+                    style="width:52px;text-align:center;padding:4px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;">
+                <button onclick="adjustScanQty(${i},1)"  style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">+</button>
+            </div>
+        </div>
+    `).join('') + `
+        <div style="margin-top:10px;">
+            <button onclick="addScanItem()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">+ 手動新增未辨識到的品項</button>
+        </div>`;
+
+    // 儲存辨識項目供確認用
+    document.getElementById('scanResult').dataset.items = JSON.stringify(results);
+    e.target.value = '';
+}
+
+function adjustScanQty(idx, delta) {
+    const input = document.getElementById(`scanQty-${idx}`);
+    if (input) input.value = Math.max(0, parseInt(input.value || 0) + delta);
+}
+
+function confirmBakeRecord() {
+    const rawItems = JSON.parse(document.getElementById('scanResult').dataset.items || '[]');
+    const confirmed = rawItems.map((item, i) => ({
+        name: item.name,
+        qty: parseInt(document.getElementById(`scanQty-${i}`)?.value || item.qty),
+    })).filter(it => it.qty > 0);
+
+    if (!confirmed.length) { showToast('沒有品項可記錄', 'warning'); return; }
+
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    confirmed.forEach(it => bakeLog.push({ ...it, time, source:'掃描' }));
+
+    dismissScan();
+    renderBakeLog();
+    showToast(`✓ 已記錄 ${confirmed.length} 項出爐量`, 'success');
+}
+
+function dismissScan() {
+    document.getElementById('scanResult').style.display = 'none';
+    document.getElementById('bakePhoto').value = '';
+}
+
+function addBakeManual() {
+    const name = document.getElementById('bakeItem').value.trim();
+    const qty  = parseInt(document.getElementById('bakeQty').value);
+    if (!name) { showToast('請輸入品項名稱', 'warning'); return; }
+    if (!qty || qty < 1) { showToast('請輸入有效數量', 'warning'); return; }
+
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    bakeLog.push({ name, qty, time, source:'手動' });
+
+    document.getElementById('bakeItem').value = '';
+    document.getElementById('bakeQty').value = '';
+    renderBakeLog();
+    showToast(`已新增：${name} ${qty} 個`, 'success', 1400);
+}
+
+function renderBakeLog() {
+    const total = bakeLog.reduce((s, it) => s + it.qty, 0);
+    document.getElementById('todayBakeTotal').textContent = total || '—';
+    document.getElementById('todayBakeCount').textContent = bakeLog.length;
+
+    if (!bakeLog.length) {
+        document.getElementById('bakeLog').innerHTML =
+            '<div style="text-align:center;padding:20px;color:var(--neutral-500);font-size:13px;">還沒有記錄，拍照或手動輸入開始記錄</div>';
+        return;
+    }
+
+    document.getElementById('bakeLog').innerHTML = [...bakeLog].reverse().map((it, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--warm-dark);">
+            <div>
+                <span style="font-size:13px;font-weight:600;color:var(--primary);">${it.name}</span>
+                <span style="font-size:11px;color:var(--neutral-500);margin-left:6px;">${it.time} · ${it.source}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;font-weight:700;color:var(--accent);">${it.qty} 個</span>
+                <button onclick="removeBakeLog(${bakeLog.length-1-i})"
+                    style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:16px;line-height:1;">×</button>
+            </div>
+        </div>`).join('');
+}
+
+function removeBakeLog(idx) {
+    bakeLog.splice(idx, 1);
+    renderBakeLog();
+}
+
+function addScanItem() {
+    const name = prompt('請輸入品項名稱：');
+    if (!name) return;
+    const qty = parseInt(prompt(`${name} 的數量：`) || '0');
+    if (!qty) return;
+    const idx = document.querySelectorAll('[id^="scanQty-"]').length;
+    const container = document.getElementById('scanItems');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--warm-dark);';
+    row.innerHTML = `
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--primary);">${name}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+            <button onclick="adjustScanQty(${idx},-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">−</button>
+            <input type="number" id="scanQty-${idx}" value="${qty}" min="0"
+                style="width:52px;text-align:center;padding:4px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;">
+            <button onclick="adjustScanQty(${idx},1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">+</button>
+        </div>`;
+    container.insertBefore(row, container.lastElementChild);
+    // 更新 dataset
+    const existing = JSON.parse(document.getElementById('scanResult').dataset.items || '[]');
+    existing.push({ name, qty });
+    document.getElementById('scanResult').dataset.items = JSON.stringify(existing);
+}
+
+// ─── 匯入 ─────────────────────────────────────────────────
+// 欄位辨識關鍵字表
+const FIELD_PATTERNS = {
+    date:  ['日期','date','時間','time','交易日','銷售日','交易時間','transaction'],
+    name:  ['品項','品名','商品名稱','商品','名稱','item','name','product','產品','product name','menu item','餐點'],
+    qty:   ['數量','銷售量','銷售數量','qty','quantity','count','個數','件數','銷售件數','sold'],
+    price: ['售價','單價','金額','price','amount','價格','unit price','單品金額','小計'],
+};
+
+const FIELD_LABELS = {
+    date:  { label:'日期',     required: true  },
+    name:  { label:'品項名稱', required: true  },
+    qty:   { label:'銷售數量', required: true  },
+    price: { label:'售價',     required: false },
+};
+
+// 目前解析到的資料（供 confirmImport 用）
+let _parsedRows = [];
+let _parsedHeaders = [];
+
+function autoDetectMapping(headers) {
+    const mapping = { date: '', name: '', qty: '', price: '' };
+    const lowerHeaders = headers.map(h => h.toLowerCase().trim());
+    for (const [field, patterns] of Object.entries(FIELD_PATTERNS)) {
+        for (const pat of patterns) {
+            const idx = lowerHeaders.findIndex(h => h.includes(pat.toLowerCase()));
+            if (idx >= 0) { mapping[field] = headers[idx]; break; }
+        }
+    }
+    return mapping;
+}
+
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        try {
+            const data = new Uint8Array(ev.target.result);
+            const wb   = XLSX.read(data, { type: 'array' });
+            const ws   = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+            if (!rows.length) { showToast('檔案是空的', 'error'); return; }
+
+            // 找第一個有內容的列當 header
+            const headerRowIdx = rows.findIndex(r => r.some(c => String(c).trim()));
+            const headers = rows[headerRowIdx].map(c => String(c).trim()).filter(Boolean);
+            const dataRows = rows.slice(headerRowIdx + 1).filter(r => r.some(c => String(c).trim()));
+
+            if (!headers.length) { showToast('找不到欄位標題', 'error'); return; }
+
+            _parsedHeaders = headers;
+            _parsedRows    = dataRows;
+
+            showMappingModal(file.name, headers, dataRows.slice(0, 3));
+        } catch(err) {
+            showToast('解析失敗，請確認檔案格式', 'error');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+}
+
+function showMappingModal(fileName, headers, previewRows) {
+    document.getElementById('mappingFileName').textContent = fileName;
+
+    // 預覽表格
+    const colCount = Math.min(headers.length, 6);
+    const shownHeaders = headers.slice(0, colCount);
+    const tableEl = document.getElementById('previewTable');
+    const thCells = shownHeaders.map(h =>
+        `<th style="padding:6px 8px;background:var(--primary);color:white;text-align:left;white-space:nowrap;font-size:11px;">${h}</th>`
+    ).join('') + (headers.length > colCount ? `<th style="padding:6px 8px;background:var(--primary);color:var(--neutral-500);">…</th>` : '');
+
+    const trs = previewRows.map(row =>
+        `<tr>${shownHeaders.map((_, i) => `<td style="padding:6px 8px;border-bottom:1px solid var(--warm-dark);white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis;">${String(row[i] ?? '').slice(0,20)}</td>`).join('')}</tr>`
+    ).join('');
+    tableEl.innerHTML = `<thead><tr>${thCells}</tr></thead><tbody>${trs}</tbody>`;
+
+    // 欄位對應
+    const detected = autoDetectMapping(headers);
+    const options  = ['（不匯入）', ...headers].map(h => `<option value="${h}">${h}</option>`).join('');
+
+    document.getElementById('mappingFields').innerHTML = Object.entries(FIELD_LABELS).map(([field, meta]) => `
+        <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:8px;">
+            <div style="font-size:13px;font-weight:600;color:var(--primary);">
+                ${meta.label}${meta.required ? ' <span style="color:var(--danger);">*</span>' : ''}
+            </div>
+            <select id="map-${field}"
+                style="width:100%;padding:9px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:13px;font-family:'Noto Sans TC',sans-serif;background:white;">
+                ${options}
+            </select>
+        </div>
+    `).join('');
+
+    // 套用自動偵測
+    for (const [field, col] of Object.entries(detected)) {
+        const sel = document.getElementById(`map-${field}`);
+        if (sel && col) sel.value = col;
+    }
+
+    document.getElementById('mappingModal').classList.add('active');
+}
+
+function confirmImport() {
+    const mapping = {};
+    for (const field of Object.keys(FIELD_LABELS)) {
+        const val = document.getElementById(`map-${field}`)?.value;
+        mapping[field] = val === '（不匯入）' ? null : val;
+    }
+
+    // 必填欄位驗證
+    const missing = Object.entries(FIELD_LABELS)
+        .filter(([f, m]) => m.required && !mapping[f])
+        .map(([, m]) => m.label);
+    if (missing.length) {
+        showToast(`請對應必填欄位：${missing.join('、')}`, 'warning'); return;
+    }
+
+    // 解析資料
+    const getVal = (row, colName) => {
+        if (!colName) return null;
+        const idx = _parsedHeaders.indexOf(colName);
+        return idx >= 0 ? row[idx] : null;
+    };
+
+    const imported = _parsedRows.map(row => ({
+        date:  getVal(row, mapping.date),
+        name:  String(getVal(row, mapping.name) ?? '').trim(),
+        qty:   parseFloat(getVal(row, mapping.qty)) || 0,
+        price: parseFloat(getVal(row, mapping.price)) || null,
+    })).filter(r => r.name && r.qty > 0);
+
+    if (!imported.length) {
+        showToast('沒有有效資料，請確認欄位對應', 'warning'); return;
+    }
+
+    closeMappingModal();
+
+    // 更新匯入歷史
+    const now = new Date();
+    const ts  = now.toISOString().slice(0, 10) + ' ' + now.toTimeString().slice(0, 5);
+    const hist = document.getElementById('importHistory');
+    const row  = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--warm-dark);animation:pageIn 0.3s ease;';
+    row.innerHTML = `<span style="color:var(--primary);font-weight:600;">${ts}</span><span class="badge-success">${imported.length} 筆</span>`;
+    hist.insertBefore(row, hist.firstChild);
+
+    showToast(`✓ 已匯入 ${imported.length} 筆銷售資料`, 'success', 3000);
+}
+
+function closeMappingModal()    { document.getElementById('mappingModal').classList.remove('active'); }
+function handleMappingBackdrop(e) { if (e.target === document.getElementById('mappingModal')) closeMappingModal(); }
+
+function addManualItem() {
+    const item  = document.getElementById('manualItem').value.trim();
+    const qty   = parseInt(document.getElementById('manualQty').value);
+    const price = parseFloat(document.getElementById('manualPrice').value);
+    if (!item)  { showToast('請輸入品項名稱', 'warning'); return; }
+    if (!qty || qty <= 0)    { showToast('請輸入有效數量', 'warning'); return; }
+    if (!price || price <= 0){ showToast('請輸入有效售價', 'warning'); return; }
+
+    manualItems.push({ item, qty, price });
+    const list = document.getElementById('manualItemList');
+    if (manualItems.length === 1) list.innerHTML = '<div style="font-size:12px;color:var(--neutral-500);margin-bottom:5px;">已輸入品項：</div>';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--warm-dark);font-size:13px;animation:pageIn 0.2s ease;';
+    row.innerHTML = `<span style="color:var(--primary);">${item}</span><span style="color:var(--neutral-500);">${qty} 個 × NT$ ${price}</span>`;
+    list.appendChild(row);
+    document.getElementById('manualItem').value = '';
+    document.getElementById('manualQty').value = '';
+    document.getElementById('manualPrice').value = '';
+    showToast(`已新增「${item}」`, 'success', 1400);
+}
+
+// ─── 拖曳上傳 ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    // 今日日期
+    const d = new Date();
+    document.getElementById('todayDate').textContent =
+        `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${['週日','週一','週二','週三','週四','週五','週六'][d.getDay()]}`;
+
+    // 拖曳
+    const zone = document.getElementById('uploadZone');
+    if (zone) {
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault(); zone.classList.remove('drag-over');
+            const f = e.dataTransfer.files[0];
+            if (f) handleFileSelect({ target:{ files:[f] } });
+        });
+    }
+
+    // 初始化補貨頁資料（預載）
+    renderAnalysisData();
+});
+</script>
+</div>
+</body>
+</html>
