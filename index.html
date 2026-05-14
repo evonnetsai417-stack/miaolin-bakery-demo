@@ -399,25 +399,25 @@
 
     <!-- 核心 KPI -->
     <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="switchPage('import');switchSubTab('import','bake')" style="cursor:pointer;position:relative;">
             <div class="kpi-label">今日出爐件數</div>
-            <div class="kpi-value">312</div>
-            <div class="kpi-sub" style="color:var(--success);">↑ 5% vs 昨日</div>
+            <div class="kpi-value" id="homeKpiBake">—</div>
+            <div class="kpi-sub" style="color:var(--neutral-500);">點擊查看明細 →</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="switchPage('analytics');switchSubTab('analytics','product')" style="cursor:pointer;">
             <div class="kpi-label">今日銷售件數</div>
-            <div class="kpi-value">289</div>
-            <div class="kpi-sub" style="color:var(--neutral-500);">售出率 92.6%</div>
+            <div class="kpi-value" id="homeKpiSales">—</div>
+            <div class="kpi-sub" style="color:var(--neutral-500);">點擊查看明細 →</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="switchPage('analytics');switchSubTab('analytics','trend')" style="cursor:pointer;">
             <div class="kpi-label">本週累計營收</div>
             <div class="kpi-value" style="font-size:17px;">NT$ 385K</div>
             <div class="kpi-sub" style="color:var(--success);">↑ 4% vs 上週</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="showWasteBreakdown()" style="cursor:pointer;">
             <div class="kpi-label">今日損耗件數</div>
-            <div class="kpi-value" style="color:var(--danger);">23</div>
-            <div class="kpi-sub" style="color:var(--danger);">損耗率 7.4%</div>
+            <div class="kpi-value" id="homeKpiWaste" style="color:var(--danger);">—</div>
+            <div class="kpi-sub" style="color:var(--danger);">點擊查看品項 →</div>
         </div>
     </div>
 
@@ -429,19 +429,19 @@
                 <div style="font-size:22px;margin-bottom:4px;">🥖</div>
                 <div style="font-size:12px;font-weight:600;margin-bottom:4px;">法國麵包</div>
                 <div style="font-size:18px;font-weight:700;color:var(--accent-light);">45</div>
-                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 12%</div>
+                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 12% vs 昨日</div>
             </div>
             <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;">
                 <div style="font-size:22px;margin-bottom:4px;">🥐</div>
                 <div style="font-size:12px;font-weight:600;margin-bottom:4px;">可頌</div>
                 <div style="font-size:18px;font-weight:700;color:var(--accent-light);">38</div>
-                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 8%</div>
+                <div style="font-size:10px;color:var(--accent-light);margin-top:2px;">↑ 8% vs 昨日</div>
             </div>
             <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;">
                 <div style="font-size:22px;margin-bottom:4px;">🍞</div>
                 <div style="font-size:12px;font-weight:600;margin-bottom:4px;">吐司</div>
                 <div style="font-size:18px;font-weight:700;color:var(--accent-light);">32</div>
-                <div style="font-size:10px;color:#FFE4B5;margin-top:2px;">↓ 3%</div>
+                <div style="font-size:10px;color:#FFE4B5;margin-top:2px;">↓ 3% vs 昨日</div>
             </div>
         </div>
     </div>
@@ -483,7 +483,6 @@
         <div class="sub-tab active" onclick="switchSubTab('analytics','trend')">銷售趨勢</div>
         <div class="sub-tab" onclick="switchSubTab('analytics','product')">品項表現</div>
         <div class="sub-tab" onclick="switchSubTab('analytics','waste')">損耗追蹤</div>
-        <div class="sub-tab" onclick="switchSubTab('analytics','cost')">成本結構</div>
     </div>
 
     <!-- 銷售趨勢 -->
@@ -616,45 +615,6 @@
         </div>
     </div>
 
-    <!-- 成本結構 -->
-    <div id="analytics-cost" class="sub-content">
-
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">本月原料成本</div>
-                <div class="kpi-value" style="font-size:17px;">NT$ 502K</div>
-                <div class="kpi-sub" style="color:var(--danger);">↑ 3.1% 麵粉漲價</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">原料佔營收比</div>
-                <div class="kpi-value">44.8%</div>
-                <div class="kpi-sub" style="color:var(--neutral-500);">健康區間 40–50%</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">原料成本佔比</h2>
-            <div style="position:relative;height:200px;width:100%;">
-                <canvas id="costPieChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2 style="color:var(--primary);font-size:15px;font-weight:600;margin-bottom:12px;">近6個月成本趨勢</h2>
-            <div class="chart-wrap-tall">
-                <canvas id="costTrendChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card" style="border-color:#D1FAE5;background:#F0FDF4;">
-            <h2 style="color:#065F46;font-size:15px;font-weight:600;margin-bottom:8px;">💰 成本優化機會</h2>
-            <div style="font-size:13px;color:var(--neutral-500);line-height:1.9;">
-                <div>• <strong style="color:var(--primary);">日清山茶花強力粉</strong> 佔原料成本 28%，與苗林行議價空間約 <strong style="color:var(--success);">↓5–8%</strong></div>
-                <div>• <strong style="color:var(--primary);">菲仕蘭發酵奶油</strong> 替換法國進口 → 紐西蘭版，每月省 <strong style="color:var(--success);">NT$ 8,000</strong></div>
-                <div>• 每週集中下單一次（目前3次），可降運費 <strong style="color:var(--success);">NT$ 1,200/月</strong></div>
-            </div>
-        </div>
-    </div>
 </div>
 
 
@@ -962,9 +922,9 @@
 
 
 <!-- FAB -->
-<div class="fab" id="cartFab" onclick="showCart()" style="display:none;">
+<div class="fab" id="cartFab" onclick="showCart()" style="opacity:0.35;">
     🛒
-    <span id="cartCount" style="position:absolute;top:-5px;right:-5px;background-color:var(--danger);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">0</span>
+    <span id="cartCount" style="position:absolute;top:-5px;right:-5px;background-color:var(--danger);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;display:none;">0</span>
 </div>
 
 <!-- Cart modal -->
@@ -981,6 +941,30 @@
             </div>
         </div>
         <button class="btn-cta" style="width:100%;" onclick="submitOrder()">送出採購單</button>
+    </div>
+</div>
+
+<!-- 損耗明細 Modal -->
+<div id="wasteModal" class="modal" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="color:var(--primary);font-size:18px;font-weight:700;margin:0;">今日損耗明細</h2>
+            <button onclick="document.getElementById('wasteModal').classList.remove('active')"
+                style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--neutral-500);line-height:1;">×</button>
+        </div>
+        <div style="font-size:12px;color:var(--neutral-500);margin-bottom:12px;">
+            出爐量 − 銷售量 = 損耗量，數據來自出爐記錄頁
+        </div>
+        <div id="wasteBreakdownList"></div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--warm-dark);">
+            <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--primary);">
+                <span>總損耗</span><span id="wasteTotalDisplay"></span>
+            </div>
+        </div>
+        <button onclick="switchPage('import');switchSubTab('import','bake');document.getElementById('wasteModal').classList.remove('active')"
+            class="btn-primary" style="width:100%;margin-top:14px;font-size:14px;padding:11px;">
+            前往出爐記錄頁輸入數據
+        </button>
     </div>
 </div>
 
@@ -1095,7 +1079,7 @@ function switchSubTab(page, tab) {
     document.querySelectorAll(`#${page} .sub-content`).forEach(el => el.classList.remove('active'));
 
     const tabs = document.querySelectorAll(`#${page} .sub-tab`);
-    const tabOrder = { trend:0, product:1, waste:2, cost:3 };
+    const tabOrder = { trend:0, product:1, waste:2 };
     const idx = tabOrder[tab];
     if (idx !== undefined) tabs[idx].classList.add('active');
     document.getElementById(`${page}-${tab}`).classList.add('active');
@@ -1112,7 +1096,6 @@ function initAnalyticsChartForTab(tab) {
     if (tab === 'trend')   { destroyChart('revenueChart'); destroyChart('monthTrendChart'); initRevenueChart(); initMonthTrendChart(); renderWeekHeatmap(); }
     if (tab === 'product') { destroyChart('salesRankChart'); initSalesRankChart(); }
     if (tab === 'waste')   { destroyChart('wasteChart'); destroyChart('prodVsSalesChart'); initWasteChart(); initProdVsSalesChart(); }
-    if (tab === 'cost')    { destroyChart('costPieChart'); destroyChart('costTrendChart'); initCostPieChart(); initCostTrendChart(); }
 }
 
 // ─── 分析 > 銷售趨勢：圖表 ───────────────────────────────
@@ -1237,45 +1220,6 @@ function initProdVsSalesChart() {
     });
 }
 
-// ─── 分析 > 成本結構 ────────────────────────────────────
-function initCostPieChart() {
-    const ctx = document.getElementById('costPieChart');
-    if (!ctx) return;
-    charts['costPieChart'] = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['日清山茶花強力粉','菲仕蘭發酵奶油','雞蛋','中澤鮮奶油','砂糖','其他'],
-            datasets: [{ data:[28,18,14,12,8,20],
-                backgroundColor:['#3D2B1F','#C49A2B','#EE7642','#F0D98B','#E8DDD0','#8D9094'],
-                borderWidth:0, hoverOffset:6 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ position:'bottom', labels:{ color:'#3D2B1F', font:{size:11}, boxWidth:12, padding:8 } } }
-        }
-    });
-}
-
-function initCostTrendChart() {
-    const ctx = document.getElementById('costTrendChart');
-    if (!ctx) return;
-    charts['costTrendChart'] = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['12月','1月','2月','3月','4月','5月'],
-            datasets: [
-                { label:'原料成本', data:[460,472,465,480,488,502], borderColor:'#C49A2B', backgroundColor:'rgba(196,154,43,0.1)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#C49A2B' },
-                { label:'人力成本', data:[220,225,220,228,232,235], borderColor:'#3D2B1F', backgroundColor:'rgba(61,43,31,0.05)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#3D2B1F' },
-            ]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:true, labels:{ color:'#3D2B1F', font:{size:11}, boxWidth:12 } } },
-            scales:{
-                y:{ beginAtZero:false, ticks:{ callback:v=>v+'K', color:'#8D9094', font:{size:10} }, grid:{color:'#E8DDD0'} },
-                x:{ ticks:{color:'#3D2B1F', font:{size:11}}, grid:{display:false} }
-            }
-        }
-    });
-}
 
 // ─── 補貨分析資料 ────────────────────────────────────────
 const PRODUCT_DATA = {
@@ -1636,35 +1580,48 @@ async function runRecipeAnimation(recipes) {
 
 function renderRecipeCards(recipes) {
     document.getElementById('recipeResults').innerHTML = recipes.map((r, i) => {
+        const rKey = encodeId(r.name);
+        const recSaved = recipeFavorites[r.name];
         const tags = [r.category, r.style, ...r.texture, ...r.flavor]
             .map(t => `<span style="display:inline-block;padding:2px 8px;background:var(--warm);border-radius:10px;font-size:11px;color:var(--neutral-500);margin:2px;">${t}</span>`)
             .join('');
 
         const ingHtml = r.ingredients.map(ing => {
-            const saved = favorites[ing.name];
+            const ingSaved = favorites[ing.name];
             if (ing.isMiaolin) {
                 return `<div class="miaolin-ing">
-                    <div style="font-size:12px;color:var(--primary);">
-                        <span style="color:var(--accent);font-weight:700;margin-right:3px;">★</span>${ing.name} <span style="color:var(--neutral-500);">${ing.amount}</span>
+                    <div style="font-size:12px;color:var(--primary);flex:1;min-width:0;">
+                        <span style="color:var(--accent);font-weight:700;margin-right:3px;">★</span>${ing.name}
+                        <span style="color:var(--neutral-500);"> ${ing.amount}</span>
                     </div>
-                    <button class="ing-fav-btn ${saved ? 'saved' : ''}" id="favbtn-${encodeId(ing.name)}"
-                        onclick="toggleFavorite('${ing.name.replace(/'/g,"\\'")}')">
-                        ${saved ? '已收藏' : '+ 最愛'}
-                    </button>
+                    <div style="display:flex;gap:4px;flex-shrink:0;">
+                        <button class="ing-fav-btn ${ingSaved ? 'saved' : ''}" id="favbtn-${encodeId(ing.name)}"
+                            onclick="toggleFavorite('${ing.name.replace(/'/g,"\\'")}')">
+                            ${ingSaved ? '★' : '☆'}
+                        </button>
+                        <button class="btn-accent" style="padding:3px 8px;font-size:11px;"
+                            onclick="addToCart('${ing.name.replace(/'/g,"\\'")}',1,100)">🛒 加購</button>
+                    </div>
                 </div>`;
             }
             return `<div style="font-size:12px;color:var(--neutral-500);padding:5px 0;border-bottom:1px solid var(--warm-dark);">• ${ing.name} <span style="float:right">${ing.amount}</span></div>`;
         }).join('');
 
         return `<div class="recipe-card" style="animation-delay:${i*0.07}s;">
-            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;gap:8px;">
                 <h3 style="color:var(--primary);font-size:16px;font-weight:700;flex:1;margin:0;">${r.name}</h3>
+                <button id="recfav-${rKey}"
+                    onclick="toggleRecipeFavorite('${r.name.replace(/'/g,"\\'")}',${i})"
+                    style="background:${recSaved ? 'var(--accent)' : 'var(--surface)'};border:1.5px solid var(--accent);border-radius:20px;padding:4px 10px;font-size:12px;color:${recSaved ? 'white' : 'var(--accent)'};cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;flex-shrink:0;">
+                    ${recSaved ? '❤ 已收藏' : '♡ 收藏食譜'}
+                </button>
             </div>
             <div style="margin-bottom:8px;">${tags}</div>
             <p style="color:var(--neutral-500);font-size:13px;margin-bottom:10px;line-height:1.5;">${r.description}</p>
-            <div style="background:var(--canvas);padding:10px;border-radius:8px;margin-bottom:10px;">
+            <div style="background:var(--canvas);padding:10px;border-radius:8px;">
                 <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">
-                    建議原料 <span style="color:var(--accent);font-weight:400;">★ 苗林品項可直接加入最愛</span>
+                    建議原料
+                    <span style="color:var(--accent);font-weight:400;font-size:11px;">★ 苗林品項可收藏或直接加購物車</span>
                 </div>
                 ${ingHtml}
             </div>
@@ -1673,6 +1630,28 @@ function renderRecipeCards(recipes) {
 }
 
 function encodeId(name) { return name.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+// ─── 食譜收藏 ────────────────────────────────────────────────
+let recipeFavorites = {};
+
+function toggleRecipeFavorite(name) {
+    const rKey = encodeId(name);
+    if (recipeFavorites[name]) {
+        delete recipeFavorites[name];
+        showToast(`已取消收藏食譜：${name}`, 'default', 1400);
+    } else {
+        recipeFavorites[name] = true;
+        showToast(`食譜「${name}」已收藏`, 'success', 1400);
+    }
+    const btn = document.getElementById(`recfav-${rKey}`);
+    if (btn) {
+        const saved = !!recipeFavorites[name];
+        btn.textContent  = saved ? '❤ 已收藏' : '♡ 收藏食譜';
+        btn.style.background = saved ? 'var(--accent)' : 'var(--surface)';
+        btn.style.color      = saved ? 'white' : 'var(--accent)';
+    }
+    updateFavCount();
+}
 
 // ─── 最愛系統 ─────────────────────────────────────────────
 function toggleFavorite(name) {
@@ -1690,27 +1669,42 @@ function toggleFavorite(name) {
 }
 
 function updateFavCount() {
-    const n = Object.keys(favorites).length;
+    const n = Object.keys(favorites).length + Object.keys(recipeFavorites).length;
     document.getElementById('favCount').textContent = n;
 }
 
 function showFavorites() {
     const list = document.getElementById('favList');
-    const keys = Object.keys(favorites);
-    if (keys.length === 0) {
-        list.innerHTML = '<p style="color:var(--neutral-500);text-align:center;padding:20px;">尚未收藏任何苗林品項<br><span style="font-size:12px;">在食譜原料旁點「+ 最愛」即可收藏</span></p>';
+    const ingKeys    = Object.keys(favorites);
+    const recipeKeys = Object.keys(recipeFavorites);
+
+    if (!ingKeys.length && !recipeKeys.length) {
+        list.innerHTML = '<p style="color:var(--neutral-500);text-align:center;padding:20px;">尚未收藏任何食譜或苗林品項</p>';
     } else {
-        list.innerHTML = keys.map(name => `
-            <div class="fav-item">
-                <div>
-                    <span style="color:var(--accent);font-weight:700;margin-right:4px;">★</span>
-                    <span style="color:var(--primary);font-weight:600;">${name}</span>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <button onclick="addToCart('${name.replace(/'/g,"\\'")}', 1, 100)" class="btn-accent" style="padding:4px 10px;font-size:11px;">加採購</button>
-                    <button onclick="toggleFavorite('${name.replace(/'/g,"\\'")}');renderFavList()" style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:16px;line-height:1;">×</button>
-                </div>
-            </div>`).join('');
+        let html = '';
+        if (recipeKeys.length) {
+            html += `<div style="font-size:11px;font-weight:600;color:var(--neutral-500);margin-bottom:6px;padding-top:4px;">收藏食譜</div>`;
+            html += recipeKeys.map(name => `
+                <div class="fav-item">
+                    <span style="color:var(--primary);font-weight:600;">❤ ${name}</span>
+                    <button onclick="toggleRecipeFavorite('${name.replace(/'/g,"\\'")}');renderFavList()"
+                        style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:18px;line-height:1;">×</button>
+                </div>`).join('');
+        }
+        if (ingKeys.length) {
+            html += `<div style="font-size:11px;font-weight:600;color:var(--neutral-500);margin:10px 0 6px;padding-top:4px;border-top:1px solid var(--warm-dark);">苗林品項收藏</div>`;
+            html += ingKeys.map(name => `
+                <div class="fav-item">
+                    <div><span style="color:var(--accent);font-weight:700;margin-right:4px;">★</span>
+                        <span style="color:var(--primary);font-weight:600;">${name}</span></div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <button onclick="addToCart('${name.replace(/'/g,"\\'")}',1,100)" class="btn-accent" style="padding:4px 10px;font-size:11px;">🛒 加購</button>
+                        <button onclick="toggleFavorite('${name.replace(/'/g,"\\'")}');renderFavList()"
+                            style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:18px;line-height:1;">×</button>
+                    </div>
+                </div>`).join('');
+        }
+        list.innerHTML = html;
     }
     document.getElementById('favModal').classList.add('active');
 }
@@ -1739,8 +1733,16 @@ function addToCart(name, qty, pricePerUnit) {
 }
 
 function updateCartUI() {
-    document.getElementById('cartCount').textContent = cart.length;
-    document.getElementById('cartFab').style.display = cart.length > 0 ? 'flex' : 'none';
+    const fab   = document.getElementById('cartFab');
+    const badge = document.getElementById('cartCount');
+    if (cart.length > 0) {
+        fab.style.opacity = '1';
+        badge.style.display = 'flex';
+        badge.textContent = cart.length;
+    } else {
+        fab.style.opacity = '0.35';
+        badge.style.display = 'none';
+    }
 }
 
 function showCart() {
@@ -1823,13 +1825,14 @@ async function handleBakePhoto(e) {
     document.getElementById('scanAccuracy').className = parseInt(accuracy) >= 90 ? 'badge-success' : 'badge-warning';
 
     document.getElementById('scanItems').innerHTML = results.map((item, i) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
-            <div style="flex:1;font-size:14px;font-weight:600;color:var(--primary);">${item.name}</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <button onclick="adjustScanQty(${i},-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">−</button>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+            <input type="text" id="scanName-${i}" value="${item.name}"
+                style="flex:1;min-width:0;padding:5px 8px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:13px;font-weight:600;font-family:'Noto Sans TC',sans-serif;color:var(--primary);">
+            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                <button onclick="adjustScanQty(${i},-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:15px;line-height:1;color:var(--primary);">−</button>
                 <input type="number" id="scanQty-${i}" value="${item.qty}" min="0"
-                    style="width:52px;text-align:center;padding:4px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;">
-                <button onclick="adjustScanQty(${i},1)"  style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:16px;line-height:1;color:var(--primary);">+</button>
+                    style="width:48px;text-align:center;padding:4px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;">
+                <button onclick="adjustScanQty(${i},1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--warm-dark);background:var(--surface);cursor:pointer;font-size:15px;line-height:1;color:var(--primary);">+</button>
             </div>
         </div>
     `).join('') + `
@@ -1850,9 +1853,9 @@ function adjustScanQty(idx, delta) {
 function confirmBakeRecord() {
     const rawItems = JSON.parse(document.getElementById('scanResult').dataset.items || '[]');
     const confirmed = rawItems.map((item, i) => ({
-        name: item.name,
-        qty: parseInt(document.getElementById(`scanQty-${i}`)?.value || item.qty),
-    })).filter(it => it.qty > 0);
+        name: (document.getElementById(`scanName-${i}`)?.value.trim() || item.name),
+        qty:  parseInt(document.getElementById(`scanQty-${i}`)?.value || item.qty),
+    })).filter(it => it.qty > 0 && it.name);
 
     if (!confirmed.length) { showToast('沒有品項可記錄', 'warning'); return; }
 
@@ -1890,6 +1893,7 @@ function renderBakeLog() {
     const total = bakeLog.reduce((s, it) => s + it.qty, 0);
     document.getElementById('todayBakeTotal').textContent = total || '—';
     document.getElementById('todayBakeCount').textContent = bakeLog.length;
+    syncHomeKPIs();
 
     if (!bakeLog.length) {
         document.getElementById('bakeLog').innerHTML =
@@ -1914,6 +1918,64 @@ function renderBakeLog() {
 function removeBakeLog(idx) {
     bakeLog.splice(idx, 1);
     renderBakeLog();
+}
+
+// 同步首頁 KPI（出爐件數、損耗）
+function syncHomeKPIs() {
+    const totalBake = bakeLog.reduce((s, it) => s + it.qty, 0);
+    const bakeEl = document.getElementById('homeKpiBake');
+    if (bakeEl) bakeEl.textContent = totalBake || '—';
+
+    // 損耗 = 出爐 − 已匯入銷售（示範用固定值，待真實銷售資料）
+    const mockSales = 289;
+    const waste = totalBake > 0 ? Math.max(0, totalBake - mockSales) : null;
+    const wasteEl = document.getElementById('homeKpiWaste');
+    if (wasteEl) wasteEl.textContent = waste !== null ? waste : '—';
+}
+
+// 損耗明細 modal
+function showWasteBreakdown() {
+    const list = document.getElementById('wasteBreakdownList');
+    const mockSalesMap = { '法國麵包':45, '可頌':38, '吐司':32, '蛋糕捲':15, '貝果':12 };
+
+    const items = bakeLog.length > 0
+        ? Object.entries(
+            bakeLog.reduce((acc, it) => {
+                acc[it.name] = (acc[it.name] || 0) + it.qty; return acc;
+            }, {})
+          ).map(([name, baked]) => ({
+              name, baked,
+              sold:  mockSalesMap[name] ?? Math.floor(baked * 0.88),
+              waste: baked - (mockSalesMap[name] ?? Math.floor(baked * 0.88))
+          }))
+        : [
+            { name:'法國麵包', baked:50, sold:45, waste:5 },
+            { name:'可頌',     baked:42, sold:38, waste:4 },
+            { name:'吐司',     baked:36, sold:32, waste:4 },
+            { name:'蛋糕捲',   baked:20, sold:15, waste:5 },
+            { name:'貝果',     baked:17, sold:12, waste:5 },
+          ];
+
+    const totalWaste = items.reduce((s, it) => s + Math.max(0, it.waste), 0);
+    document.getElementById('wasteTotalDisplay').textContent = `${totalWaste} 個`;
+
+    list.innerHTML = items.map(it => {
+        const w = Math.max(0, it.waste);
+        const rate = it.baked > 0 ? ((w / it.baked) * 100).toFixed(1) : 0;
+        const color = rate > 15 ? 'var(--danger)' : rate > 8 ? 'var(--warning)' : 'var(--success)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+            <div>
+                <div style="font-size:13px;font-weight:600;color:var(--primary);">${it.name}</div>
+                <div style="font-size:11px;color:var(--neutral-500);">出爐 ${it.baked} · 售出 ${it.sold}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:15px;font-weight:700;color:${color};">${w} 個</div>
+                <div style="font-size:11px;color:${color};">${rate}%</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('wasteModal').classList.add('active');
 }
 
 function addScanItem() {
@@ -1947,6 +2009,15 @@ const FIELD_PATTERNS = {
     name:  ['品項','品名','商品名稱','商品','名稱','item','name','product','產品','product name','menu item','餐點'],
     qty:   ['數量','銷售量','銷售數量','qty','quantity','count','個數','件數','銷售件數','sold'],
     price: ['售價','單價','金額','price','amount','價格','unit price','單品金額','小計'],
+    waste_qty:  ['報廢量','損耗量','廢棄量','報廢數','waste','廢棄數'],
+    waste_rate: ['報廢率','損耗率','廢棄率','waste rate','廢棄比'],
+};
+
+const FIELD_LABELS_EXTENDED = {
+    ...{date:{label:'日期',required:true}, name:{label:'品項名稱',required:true},
+        qty:{label:'銷售數量',required:true}, price:{label:'售價',required:false}},
+    waste_qty:  { label:'報廢量',  required: false },
+    waste_rate: { label:'報廢率',  required: false },
 };
 
 const FIELD_LABELS = {
@@ -2025,7 +2096,7 @@ function showMappingModal(fileName, headers, previewRows) {
     const detected = autoDetectMapping(headers);
     const options  = ['（不匯入）', ...headers].map(h => `<option value="${h}">${h}</option>`).join('');
 
-    document.getElementById('mappingFields').innerHTML = Object.entries(FIELD_LABELS).map(([field, meta]) => `
+    document.getElementById('mappingFields').innerHTML = Object.entries(FIELD_LABELS_EXTENDED).map(([field, meta]) => `
         <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:8px;">
             <div style="font-size:13px;font-weight:600;color:var(--primary);">
                 ${meta.label}${meta.required ? ' <span style="color:var(--danger);">*</span>' : ''}
@@ -2054,7 +2125,7 @@ function confirmImport() {
     }
 
     // 必填欄位驗證
-    const missing = Object.entries(FIELD_LABELS)
+    const missing = Object.entries(FIELD_LABELS_EXTENDED)
         .filter(([f, m]) => m.required && !mapping[f])
         .map(([, m]) => m.label);
     if (missing.length) {
