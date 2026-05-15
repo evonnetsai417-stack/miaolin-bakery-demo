@@ -371,6 +371,28 @@
 
         .upload-zone.drag-over { background-color: var(--accent-light); border-color: var(--accent-deep); }
 
+        /* 語音按鈕 */
+        .voice-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 10px;
+            padding: 13px; width: 100%;
+            font-size: 15px; font-weight: 600;
+            font-family: 'Noto Sans TC', sans-serif;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .voice-btn.recording {
+            background: var(--danger);
+            animation: pulse-rec 1s ease-in-out infinite;
+        }
+        @keyframes pulse-rec {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+            50%       { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+        }
+        .voice-dot { width: 10px; height: 10px; border-radius: 50%; background: white; }
+        .recording .voice-dot { animation: blink-dot 0.8s steps(1) infinite; }
+        @keyframes blink-dot { 50% { opacity: 0; } }
+
         @media (min-width: 431px) {
             .fab { right: calc(50% - 195px); }
         }
@@ -552,9 +574,9 @@
                 <div class="kpi-sub" style="color:var(--neutral-500);">本月在售</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">平均毛利率</div>
-                <div class="kpi-value" style="color:var(--success);">54.3%</div>
-                <div class="kpi-sub" style="color:var(--success);">↑ 1.2pp vs 上月</div>
+                <div class="kpi-label">本月平均日營收</div>
+                <div class="kpi-value" style="font-size:17px;">NT$ 65K</div>
+                <div class="kpi-sub" style="color:var(--success);">↑ 9.4% vs 上月</div>
             </div>
         </div>
 
@@ -779,9 +801,11 @@
 <div id="import" class="page" style="padding:16px;">
     <h1 style="color:var(--primary);font-size:20px;font-weight:700;margin-bottom:14px;">📋 數據記錄</h1>
 
-    <div class="sub-tabs">
-        <div class="sub-tab active" onclick="switchSubTab('import','bake')">出爐記錄</div>
-        <div class="sub-tab" onclick="switchSubTab('import','sales')">銷售匯入</div>
+    <div class="sub-tabs" style="gap:1px;">
+        <div class="sub-tab active" onclick="switchSubTab('import','bake')" style="font-size:11px;">出爐記錄</div>
+        <div class="sub-tab" onclick="switchSubTab('import','ingredient')" style="font-size:11px;">進料記錄</div>
+        <div class="sub-tab" onclick="switchSubTab('import','notes')" style="font-size:11px;">食譜筆記</div>
+        <div class="sub-tab" onclick="switchSubTab('import','sales')" style="font-size:11px;">銷售匯入</div>
     </div>
 
     <!-- ── 出爐記錄 ── -->
@@ -860,6 +884,109 @@
                     還沒有記錄，拍照或手動輸入開始記錄
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ── 進料記錄 ── -->
+    <div id="import-ingredient" class="sub-content">
+
+        <!-- 拍照辨識 -->
+        <div class="card" style="text-align:center;padding:20px 16px;">
+            <div style="font-size:40px;margin-bottom:8px;">📦</div>
+            <div style="font-weight:700;color:var(--primary);font-size:15px;margin-bottom:4px;">拍照辨識來貨</div>
+            <div style="color:var(--neutral-500);font-size:12px;margin-bottom:14px;">拍送貨單或原料包裝，自動讀取品項與數量</div>
+            <input type="file" id="ingPhoto" accept="image/*" capture="environment" style="display:none;" onchange="handleIngPhoto(event)">
+            <button class="btn-cta" onclick="document.getElementById('ingPhoto').click()"
+                style="width:100%;padding:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+                📸 拍照辨識
+            </button>
+        </div>
+
+        <!-- AI辨識結果 -->
+        <div id="ingScanResult" style="display:none;">
+            <div class="card" style="border-color:var(--accent);background:#FFFBEB;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div style="font-weight:700;color:var(--primary);font-size:14px;">🤖 AI 辨識來貨</div>
+                    <span id="ingAccuracy" class="badge-success"></span>
+                </div>
+                <div id="ingScanItems"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                    <button onclick="dismissIngScan()" style="background:var(--surface);border:1.5px solid var(--warm-dark);border-radius:8px;padding:10px;font-size:13px;color:var(--neutral-500);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">重新掃描</button>
+                    <button class="btn-cta" onclick="confirmIngRecord()" style="padding:10px;font-size:13px;">✓ 確認進料</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 語音輸入 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">🎙️ 語音輸入進料</h2>
+            <div style="font-size:12px;color:var(--neutral-500);margin-bottom:10px;">例：「日清山茶花強力粉 兩包、菲仕蘭發酵奶油 一箱」</div>
+            <button class="voice-btn" id="ingVoiceBtn" onclick="toggleVoice('ing')">
+                <div class="voice-dot"></div> 按住說話
+            </button>
+            <div id="ingVoiceResult" style="margin-top:10px;padding:10px;background:var(--canvas);border-radius:8px;font-size:13px;color:var(--primary);display:none;min-height:40px;"></div>
+            <button id="ingVoiceConfirm" onclick="saveIngVoiceNote()" style="display:none;margin-top:8px;width:100%;" class="btn-accent">存入進料記錄</button>
+        </div>
+
+        <!-- 手動輸入 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">✏️ 手動輸入</h2>
+            <div style="display:grid;grid-template-columns:1fr 80px 70px auto;gap:6px;align-items:end;">
+                <div>
+                    <label style="font-size:11px;color:var(--neutral-500);display:block;margin-bottom:3px;">原料</label>
+                    <input type="text" id="ingItem" placeholder="日清山茶花強力粉"
+                        style="width:100%;padding:9px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:12px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:var(--neutral-500);display:block;margin-bottom:3px;">數量</label>
+                    <input type="number" id="ingQty" placeholder="2"
+                        style="width:100%;padding:9px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:12px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:var(--neutral-500);display:block;margin-bottom:3px;">單位</label>
+                    <select id="ingUnit" style="width:100%;padding:9px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:12px;font-family:'Noto Sans TC',sans-serif;background:white;">
+                        <option>包</option><option>箱</option><option>kg</option><option>瓶</option><option>桶</option>
+                    </select>
+                </div>
+                <button class="btn-accent" onclick="addIngManual()" style="padding:9px 12px;height:38px;margin-bottom:0;">新增</button>
+            </div>
+        </div>
+
+        <!-- 今日進料紀錄 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">📦 今日進料紀錄</h2>
+            <div id="ingLog"><div style="text-align:center;padding:16px;color:var(--neutral-500);font-size:13px;">尚無進料記錄</div></div>
+        </div>
+    </div>
+
+    <!-- ── 食譜筆記 ── -->
+    <div id="import-notes" class="sub-content">
+
+        <!-- 語音記錄 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:6px;">🎙️ 語音記錄食譜</h2>
+            <div style="font-size:12px;color:var(--neutral-500);margin-bottom:12px;">邊做邊說，系統幫你存下來<br>例：「今天可頌用了山茶花強力粉500克、菲仕蘭奶油250克，發酵90分鐘效果很好」</div>
+            <button class="voice-btn" id="notesVoiceBtn" onclick="toggleVoice('notes')">
+                <div class="voice-dot"></div> 按住說話
+            </button>
+            <div id="notesVoiceResult" style="margin-top:10px;padding:12px;background:var(--canvas);border-radius:8px;font-size:13px;color:var(--primary);display:none;min-height:60px;line-height:1.6;"></div>
+            <div id="notesVoiceActions" style="display:none;display:none;gap:8px;margin-top:8px;">
+                <button onclick="saveNote()" class="btn-cta" style="width:100%;padding:11px;font-size:13px;">💾 儲存筆記</button>
+            </div>
+        </div>
+
+        <!-- 手動輸入 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">✏️ 文字筆記</h2>
+            <textarea id="noteText" placeholder="記錄配方調整、供應商備註、今日異常..."
+                style="width:100%;padding:10px;border:1.5px solid var(--warm-dark);border-radius:8px;font-size:13px;font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;min-height:100px;resize:vertical;"></textarea>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="saveNote()">儲存筆記</button>
+        </div>
+
+        <!-- 筆記列表 -->
+        <div class="card">
+            <h2 style="color:var(--primary);font-size:14px;font-weight:600;margin-bottom:10px;">📓 我的筆記</h2>
+            <div id="notesList"><div style="text-align:center;padding:16px;color:var(--neutral-500);font-size:13px;">尚無筆記</div></div>
         </div>
     </div>
 
@@ -1638,15 +1765,16 @@ function toggleRecipeFavorite(name) {
     const rKey = encodeId(name);
     if (recipeFavorites[name]) {
         delete recipeFavorites[name];
-        showToast(`已取消收藏食譜：${name}`, 'default', 1400);
+        showToast(`已取消收藏：${name}`, 'default', 1400);
     } else {
-        recipeFavorites[name] = true;
+        const recipe = RECIPES.find(r => r.name === name) || { name };
+        recipeFavorites[name] = recipe;
         showToast(`食譜「${name}」已收藏`, 'success', 1400);
     }
     const btn = document.getElementById(`recfav-${rKey}`);
     if (btn) {
         const saved = !!recipeFavorites[name];
-        btn.textContent  = saved ? '❤ 已收藏' : '♡ 收藏食譜';
+        btn.textContent      = saved ? '❤ 已收藏' : '♡ 收藏食譜';
         btn.style.background = saved ? 'var(--accent)' : 'var(--surface)';
         btn.style.color      = saved ? 'white' : 'var(--accent)';
     }
@@ -1683,13 +1811,29 @@ function showFavorites() {
     } else {
         let html = '';
         if (recipeKeys.length) {
-            html += `<div style="font-size:11px;font-weight:600;color:var(--neutral-500);margin-bottom:6px;padding-top:4px;">收藏食譜</div>`;
-            html += recipeKeys.map(name => `
-                <div class="fav-item">
-                    <span style="color:var(--primary);font-weight:600;">❤ ${name}</span>
-                    <button onclick="toggleRecipeFavorite('${name.replace(/'/g,"\\'")}');renderFavList()"
-                        style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:18px;line-height:1;">×</button>
-                </div>`).join('');
+            html += `<div style="font-size:11px;font-weight:600;color:var(--neutral-500);margin-bottom:10px;">收藏食譜（${recipeKeys.length}）</div>`;
+            html += recipeKeys.map(name => {
+                const r = recipeFavorites[name];
+                const tags = r.category ? [r.category, r.style, ...(r.texture||[])].filter(Boolean)
+                    .map(t=>`<span style="display:inline-block;padding:2px 7px;background:var(--warm);border-radius:8px;font-size:10px;color:var(--neutral-500);margin:1px;">${t}</span>`).join('') : '';
+                const ingList = r.ingredients ? r.ingredients.slice(0,4).map(ing =>
+                    `<div style="font-size:11px;padding:3px 0;border-bottom:1px solid var(--warm-dark);display:flex;justify-content:space-between;">
+                        <span style="color:${ing.isMiaolin?'var(--accent)':'var(--neutral-500)'};">${ing.isMiaolin?'★ ':'• '}${ing.name}</span>
+                        <span style="color:var(--neutral-500);">${ing.amount}</span>
+                    </div>`
+                ).join('') + (r.ingredients?.length > 4 ? `<div style="font-size:10px;color:var(--neutral-500);margin-top:3px;">+${r.ingredients.length-4} 項原料</div>` : '') : '';
+                return `
+                <div style="background:var(--surface);border:1px solid var(--warm-dark);border-radius:10px;padding:12px;margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                        <div style="font-size:14px;font-weight:700;color:var(--primary);flex:1;">${name}</div>
+                        <button onclick="toggleRecipeFavorite('${name.replace(/'/g,"\\'")}');renderFavList()"
+                            style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">×</button>
+                    </div>
+                    ${tags ? `<div style="margin-bottom:6px;">${tags}</div>` : ''}
+                    ${r.description ? `<div style="font-size:12px;color:var(--neutral-500);margin-bottom:8px;line-height:1.5;">${r.description}</div>` : ''}
+                    ${ingList ? `<div style="background:var(--canvas);padding:8px;border-radius:6px;">${ingList}</div>` : ''}
+                </div>`;
+            }).join('');
         }
         if (ingKeys.length) {
             html += `<div style="font-size:11px;font-weight:600;color:var(--neutral-500);margin:10px 0 6px;padding-top:4px;border-top:1px solid var(--warm-dark);">苗林品項收藏</div>`;
@@ -1918,6 +2062,215 @@ function renderBakeLog() {
 function removeBakeLog(idx) {
     bakeLog.splice(idx, 1);
     renderBakeLog();
+}
+
+// ─── 語音輸入 (Web Speech API) ────────────────────────────
+let voiceRecognition = null;
+let activeVoiceTarget = null;
+
+function toggleVoice(target) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showToast('此裝置不支援語音輸入', 'warning'); return; }
+
+    const btn       = document.getElementById(target + 'VoiceBtn');
+    const resultEl  = document.getElementById(target + 'VoiceResult');
+
+    if (voiceRecognition && activeVoiceTarget === target) {
+        voiceRecognition.stop();
+        return;
+    }
+    if (voiceRecognition) voiceRecognition.stop();
+
+    const rec = new SR();
+    rec.lang = 'zh-TW';
+    rec.continuous = true;
+    rec.interimResults = true;
+    voiceRecognition = rec;
+    activeVoiceTarget = target;
+
+    btn.classList.add('recording');
+    btn.querySelector('.voice-dot').style.background = 'white';
+    btn.childNodes[1].textContent = ' 錄音中…';
+    resultEl.style.display = 'block';
+    resultEl.textContent = '…';
+
+    rec.onresult = (e) => {
+        const text = Array.from(e.results).map(r => r[0].transcript).join('');
+        resultEl.textContent = text;
+    };
+
+    rec.onend = () => {
+        btn.classList.remove('recording');
+        btn.innerHTML = '<div class="voice-dot"></div> 按住說話';
+        voiceRecognition = null;
+        activeVoiceTarget = null;
+        const text = resultEl.textContent.trim();
+        if (text && text !== '…') {
+            if (target === 'ing') {
+                document.getElementById('ingVoiceConfirm').style.display = 'block';
+            } else if (target === 'notes') {
+                document.getElementById('notesVoiceActions').style.display = 'flex';
+            }
+        }
+    };
+
+    rec.onerror = (e) => {
+        showToast('語音辨識失敗：' + e.error, 'error');
+        rec.stop();
+    };
+
+    rec.start();
+}
+
+// ─── 進料記錄 ─────────────────────────────────────────────
+let ingLog = [];
+
+const MOCK_ING_SCAN = [
+    [{ name:'日清山茶花強力粉', qty:2, unit:'包（25kg/包）' }, { name:'菲仕蘭發酵奶油', qty:1, unit:'箱（25kg/箱）' }],
+    [{ name:'燕子牌即發酵母',   qty:3, unit:'箱（500g×20/箱）' }, { name:'中澤純生鮮奶油', qty:2, unit:'盒（1L/盒）' }],
+    [{ name:'日清百合花法國粉', qty:1, unit:'包（25kg/包）' }, { name:'MG奶油乳酪',    qty:4, unit:'條（2kg/條）' }],
+];
+
+async function handleIngPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const scanDiv = document.getElementById('ingScanResult');
+    scanDiv.style.display = 'block';
+    document.getElementById('ingScanItems').innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:16px;justify-content:center;">
+            <div class="loading-spinner" style="border-color:rgba(196,154,43,0.3);border-top-color:var(--accent);"></div>
+            <span style="color:var(--neutral-500);font-size:13px;">AI 辨識來貨中…</span>
+        </div>`;
+    document.getElementById('ingAccuracy').textContent = '辨識中…';
+    scanDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    await new Promise(r => setTimeout(r, 1600));
+
+    const results  = MOCK_ING_SCAN[Math.floor(Math.random() * MOCK_ING_SCAN.length)];
+    const accuracy = (85 + Math.floor(Math.random() * 10)) + '%';
+    document.getElementById('ingAccuracy').textContent = `信心度 ${accuracy}`;
+    document.getElementById('ingAccuracy').className = parseInt(accuracy) >= 90 ? 'badge-success' : 'badge-warning';
+
+    document.getElementById('ingScanItems').innerHTML = results.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+            <input type="text" id="ingScanName-${i}" value="${item.name}"
+                style="flex:1;padding:5px 8px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:13px;font-weight:600;font-family:'Noto Sans TC',sans-serif;color:var(--primary);">
+            <input type="number" id="ingScanQty-${i}" value="${item.qty}" min="0"
+                style="width:50px;text-align:center;padding:5px;border:1.5px solid var(--warm-dark);border-radius:6px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;">
+            <span style="font-size:11px;color:var(--neutral-500);white-space:nowrap;">${item.unit}</span>
+        </div>`).join('');
+
+    document.getElementById('ingScanResult').dataset.count = results.length;
+    e.target.value = '';
+}
+
+function confirmIngRecord() {
+    const count = parseInt(document.getElementById('ingScanResult').dataset.count || 0);
+    const confirmed = Array.from({ length: count }, (_, i) => ({
+        name: document.getElementById(`ingScanName-${i}`)?.value.trim(),
+        qty:  parseFloat(document.getElementById(`ingScanQty-${i}`)?.value) || 0,
+    })).filter(it => it.name && it.qty > 0);
+    if (!confirmed.length) return;
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    confirmed.forEach(it => ingLog.push({ ...it, time, source:'掃描' }));
+    dismissIngScan();
+    renderIngLog();
+    showToast(`✓ 已記錄 ${confirmed.length} 項進料`, 'success');
+}
+
+function dismissIngScan() {
+    document.getElementById('ingScanResult').style.display = 'none';
+    document.getElementById('ingPhoto').value = '';
+}
+
+function saveIngVoiceNote() {
+    const text = document.getElementById('ingVoiceResult').textContent.trim();
+    if (!text || text === '…') return;
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    ingLog.push({ name: text, qty: null, time, source:'語音' });
+    document.getElementById('ingVoiceResult').style.display = 'none';
+    document.getElementById('ingVoiceConfirm').style.display = 'none';
+    renderIngLog();
+    showToast('語音進料記錄已儲存', 'success');
+}
+
+function addIngManual() {
+    const name = document.getElementById('ingItem').value.trim();
+    const qty  = parseFloat(document.getElementById('ingQty').value);
+    const unit = document.getElementById('ingUnit').value;
+    if (!name) { showToast('請輸入原料名稱', 'warning'); return; }
+    if (!qty || qty <= 0) { showToast('請輸入有效數量', 'warning'); return; }
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    ingLog.push({ name, qty, unit, time, source:'手動' });
+    document.getElementById('ingItem').value = '';
+    document.getElementById('ingQty').value  = '';
+    renderIngLog();
+    showToast(`已新增：${name} ${qty} ${unit}`, 'success', 1400);
+}
+
+function renderIngLog() {
+    const el = document.getElementById('ingLog');
+    if (!ingLog.length) {
+        el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--neutral-500);font-size:13px;">尚無進料記錄</div>';
+        return;
+    }
+    el.innerHTML = [...ingLog].reverse().map((it, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--warm-dark);">
+            <div>
+                <span style="font-size:13px;font-weight:600;color:var(--primary);">${it.name}</span>
+                <span style="font-size:11px;color:var(--neutral-500);margin-left:6px;">${it.time} · ${it.source}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                ${it.qty ? `<span style="font-size:13px;font-weight:700;color:var(--accent);">${it.qty}${it.unit ? ' '+it.unit : ''}</span>` : ''}
+                <button onclick="ingLog.splice(ingLog.length-1-${i},1);renderIngLog()"
+                    style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:16px;line-height:1;">×</button>
+            </div>
+        </div>`).join('');
+}
+
+// ─── 食譜筆記 ─────────────────────────────────────────────
+let notes = [];
+
+function saveNote() {
+    const voiceText  = document.getElementById('notesVoiceResult')?.textContent.trim();
+    const manualText = document.getElementById('noteText')?.value.trim();
+    const text = voiceText && voiceText !== '…' ? voiceText : manualText;
+    if (!text) { showToast('請先輸入或錄音內容', 'warning'); return; }
+    const now = new Date();
+    notes.unshift({
+        text,
+        time: now.toISOString().slice(0,10) + ' ' +
+              now.getHours().toString().padStart(2,'0') + ':' +
+              now.getMinutes().toString().padStart(2,'0'),
+        source: (voiceText && voiceText !== '…') ? '語音' : '手動',
+    });
+    if (document.getElementById('notesVoiceResult')) {
+        document.getElementById('notesVoiceResult').style.display = 'none';
+        document.getElementById('notesVoiceResult').textContent = '';
+        document.getElementById('notesVoiceActions').style.display = 'none';
+    }
+    if (document.getElementById('noteText')) document.getElementById('noteText').value = '';
+    renderNotesList();
+    showToast('筆記已儲存', 'success', 1400);
+}
+
+function renderNotesList() {
+    const el = document.getElementById('notesList');
+    if (!notes.length) {
+        el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--neutral-500);font-size:13px;">尚無筆記</div>';
+        return;
+    }
+    el.innerHTML = notes.map((n, i) => `
+        <div style="padding:10px 0;border-bottom:1px solid var(--warm-dark);">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;">
+                <div style="font-size:11px;color:var(--neutral-500);">${n.time} · ${n.source}</div>
+                <button onclick="notes.splice(${i},1);renderNotesList()"
+                    style="background:none;border:none;color:var(--neutral-500);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">×</button>
+            </div>
+            <div style="font-size:13px;color:var(--primary);line-height:1.6;">${n.text}</div>
+        </div>`).join('');
 }
 
 // 同步首頁 KPI（出爐件數、損耗）
